@@ -13,7 +13,7 @@ def split_data(data, separator):
 	return train, test
 
 def main():
-	model = 4
+	model = 1
 	parameters = 0
 	#file_name = 'forecast-competition-training.csv'
 	file_name = 'forecast-competition-complete.csv'
@@ -23,8 +23,18 @@ def main():
 	f = open('resultados.csv', 'w')
 	writer = csv.writer(f)
 
-	mini = min(dataframe.loc[:,'TARGET'].values)
-	maxi = max(dataframe.loc[:,'TARGET'].values)
+	# chose the feature to predict
+	predicting = 0
+	cols = dataframe.columns
+	predicting = cols[predicting]
+	cols = set(cols)
+	cols.remove(predicting)
+	cols = [predicting] + list(cols)
+	dataframe = dataframe[cols]
+
+	out = dataframe.columns[0]
+	mini = min(dataframe.loc[:,out].values)
+	maxi = max(dataframe.loc[:,out].values)
 	rango = maxi - mini
 
 	for i in range(400, 500):
@@ -38,13 +48,11 @@ def main():
 
 		print('pred: %.20f' % pred)
 		print('actual: %.20f' % actual)
-		#print('diff: %.20f  \n\n' % np.abs(actual - pred))
-		# print('diff: %.20f, %.2f%%  \n\n' % (np.abs(actual - pred), np.abs((actual - pred) / actual)*100))
 		print('diff: %.20f, %.2f%%  \n\n' % (np.abs(actual - pred), np.abs((actual - pred) / rango)*100))
 		df = df.append(pd.Series(pred), ignore_index=True)
 		writer.writerow([pred])
 
-	df.columns=['target']
+	df.columns=[out]
 	print(df)
 	f.close()
 

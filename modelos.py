@@ -105,7 +105,7 @@ def model_arima(train_X, test_X, train_y, test_y, n_series, d, q, n_features, n_
 	y_hat = []
 	for i in range(test_size + 1):
 		with warnings.catch_warnings():
-    		warnings.simplefilter("ignore", category=ConvergenceWarning)
+			warnings.simplefilter("ignore", category=ConvergenceWarning)
 			model = SARIMAX(train_X, order=(n_lags, d, q))
 			model_fit = model.fit(disp=0, maxiter=200, method='powell')
 			output = model_fit.forecast()[0]

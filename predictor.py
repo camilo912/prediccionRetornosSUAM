@@ -96,7 +96,8 @@ def decompose_pca(X, n_pca, m_n):
 	return transformed
 
 def transform_values(data, n_lags, n_series, dim, n_pca=0, m_n=0):
-	global train_size, scaler
+	global scaler
+	train_size = 0.8
 	n_features = data.shape[1]
 	reframed = series_to_supervised(data, n_lags, 1)
 	# print(scaler.inverse_transform(reframed.values[-1,-50:].reshape(1, -1)))
@@ -288,11 +289,21 @@ def bayes_optimization(i_model):
 
 def predictor(data, id_model, tune):
 	global values, scaler, n_features, MAX_EVALS, n_series, train_size, i_model
+	
+	# feature selection
+	import feature_selection
+	# feature_selection.select_features_stepwise_forward(df, 13)
+	# feature_selection.select_features_ga(pd.DataFrame(data))
+	df = pd.read_csv('forecast-competition-complete_selected.csv', index_col=0)
+	data = df.values
+	# values = data
+
 	values, scaler = normalize_data(data)
 	MAX_EVALS = 100
 	n_series = 1
 	train_size = 0.8
-	n_features = data.shape[1]
+
+	n_features = values.shape[1]
 	i_model = id_model
 
 	if(tune):
