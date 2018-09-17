@@ -244,10 +244,14 @@ def bayes_optimization(i_model):
 				'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
 				'batch_size': hp.quniform('batch_size', 5, 100, 1)}
 	elif(i_model == 1):
+		# space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
+		# 		'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
+		# 		'max_features': hp.quniform('max_features', 1, 50, 1),
+		# 		'min_samples': hp.quniform('min_samples', 1, 20, 1)}
 		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
-				'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
-				'max_features': hp.quniform('max_features', 1, 50, 1),
-				'min_samples': hp.quniform('min_samples', 1, 20, 1)}
+		 		'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
+		 		'max_features': hp.quniform('max_features', 1, 23, 1),
+		 		'min_samples': hp.quniform('min_samples', 1, 20, 1)}
 	elif(i_model == 2):
 		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
 				'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
@@ -291,7 +295,8 @@ def predictor(data, id_model, tune):
 	global values, scaler, n_features, MAX_EVALS, n_series, train_size, i_model
 	
 	# feature selection
-	import feature_selection
+	#import feature_selection
+	#feature_selection.select_features_sa(pd.DataFrame(data))
 	# feature_selection.select_features_stepwise_forward(df, 13)
 	# feature_selection.select_features_ga(pd.DataFrame(data))
 	df = pd.read_csv('forecast-competition-complete_selected.csv', index_col=0)
@@ -299,7 +304,7 @@ def predictor(data, id_model, tune):
 	# values = data
 
 	values, scaler = normalize_data(data)
-	MAX_EVALS = 100
+	MAX_EVALS = 1000
 	n_series = 1
 	train_size = 0.8
 
@@ -370,7 +375,8 @@ def predictor(data, id_model, tune):
 			# print(y_hat[-1][0])
 			return last
 		elif(i_model == 1):
-			n_lags, n_estimators, max_features, min_samples = 4, 500, 14, 1
+			# n_lags, n_estimators, max_features, min_samples = 4, 500, 14, 1
+			n_lags, n_estimators, max_features, min_samples = 4, 762, 18, 3 # for selected features
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_estimators':n_estimators, 'max_features':max_features, 'min_samples':min_samples}, i_model, n_features, n_lags, scaler, last_values)

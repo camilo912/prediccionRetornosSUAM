@@ -13,7 +13,7 @@ def split_data(data, separator):
 	return train, test
 
 def main():
-	model = 1
+	model = 3
 	parameters = 0
 	#file_name = 'forecast-competition-training.csv'
 	file_name = 'forecast-competition-complete.csv'
@@ -37,7 +37,7 @@ def main():
 	maxi = max(dataframe.loc[:,out].values)
 	rango = maxi - mini
 
-	for i in range(400, 500):
+	for i in range(400, 401): # 500 max
 		print(i)
 		train, test = split_data(dataframe.values, i)
 

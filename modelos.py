@@ -1,10 +1,4 @@
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Input, LSTM, Reshape, Lambda, RepeatVector
-
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.ensemble import AdaBoostRegressor
 from sklearn.metrics import mean_squared_error
-from sklearn.svm import SVR
 
 import numpy as np
 import math
@@ -47,6 +41,8 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 
 ############################# LSTM ####################################
 def model_lstm(train_X, test_X, train_y, test_y, n_series, n_a, n_epochs, batch_size, n_features, n_lags, scaler, last_values):
+	from keras.models import Sequential
+	from keras.layers import Dense, Activation, Dropout, Input, LSTM, Reshape, Lambda, RepeatVector
 	# design network
 	model = Sequential()
 	model.add(LSTM(n_a, input_shape=(train_X.shape[1], train_X.shape[2])))
@@ -65,6 +61,7 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_a, n_epochs, batch_
 
 ###################### random forest ##########################
 def model_random_forest(train_X, test_X, train_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values):
+	from sklearn.ensemble import RandomForestRegressor
 	model = RandomForestRegressor(n_estimators=n_estimators, max_features=max_features, min_samples_leaf=min_samples, n_jobs=4)
 	model.fit(train_X, train_y.ravel())
 
@@ -76,6 +73,7 @@ def model_random_forest(train_X, test_X, train_y, test_y, n_series, n_estimators
 
 ####################### ada boost ###############################
 def model_ada_boost(train_X, test_X, train_y, test_y, n_series, n_estimators, lr, n_features, n_lags, scaler, last_values):
+	from sklearn.ensemble import AdaBoostRegressor
 	model = AdaBoostRegressor(n_estimators=n_estimators, learning_rate=lr)
 	model.fit(train_X, train_y.ravel())
 
@@ -87,6 +85,7 @@ def model_ada_boost(train_X, test_X, train_y, test_y, n_series, n_estimators, lr
 
 ####################################### SVM ##############################
 def model_svm(train_X, test_X, train_y, test_y, n_series, n_features, n_lags, scaler, last_values):
+	from sklearn.svm import SVR
 	model = SVR(kernel='poly', degree=1)
 	model.fit(train_X, train_y.ravel())
 
@@ -96,6 +95,7 @@ def model_svm(train_X, test_X, train_y, test_y, n_series, n_features, n_lags, sc
 
 	return rmse, y, y_hat, last
 
+###################################### ARIMA #########################################
 def model_arima(train_X, test_X, train_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values):
 	#from statsmodels.tsa.arima_model import ARIMA
 	from statsmodels.tsa.statespace.sarimax import SARIMAX

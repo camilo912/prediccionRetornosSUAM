@@ -90,24 +90,6 @@ def select_features_ga(dataFrame):
 			loss = mean_squared_error(pred, test_y)
 			losses.append(loss)
 
-			# # space for dimensional reduction
-			# import dimensionality_reduction
-			# scaled = dimensionality_reduction.reduce_dimensionality(scaled, 10)
-
-			# n_features = scaled.shape[1]
-
-			# batch_size, lr, n_epochs, n_hidden, n_lags, weight_decay = 75, 0.13575862699150665, 153, 167, 30, 0.00005
-
-			# data = lstm.series_to_supervised(scaled, n_lags, 1, ys=ys)
-			# train_X, test_X, train_y, test_y = lstm.split_data(data, n_features, n_lags)
-
-			# loss_function = lstm.get_loss_function()
-			# model = lstm.Model(train_X.shape[1], n_hidden)
-			# optimizer = lstm.get_optimizer(model, lr, weight_decay)
-
-			# _, loss = lstm.fit(train_X, test_X, train_y, test_y, n_hidden, n_epochs, loss_function, optimizer, model, batch_size, weight_decay, 0)
-			# losses.append(loss)
-
 		losses = np.array(losses)
 		# print(losses)
 		# print('best loss: %f' % np.min(losses))
@@ -140,7 +122,56 @@ def select_features_ga(dataFrame):
 	df = dataFrame[cols]
 	df.to_csv('forecast-competition-complete_selected.csv')
 
+def select_features_sa(dataFrame):
+	from simanneal import Annealer
 
+	class Sas(Annealer):
+		def __init__(self, state, df):
+			self.df = df.copy()
+			super(Sas, self).__init__(state)
+
+		def move(self):
+			idx = np.random.randint(0, len(self.state))
+			self.state[idx] = not(self.state[idx])
+
+		def energy(self):
+			from sklearn.metrics import mean_squared_error
+			#from sklearn.linear_model import LinearRegression
+			#model = LinearRegression()
+			#from sklearn.ensemble import RandomForestRegressor
+			#model = RandomForestRegressor()
+			from sklearn.svm import SVR
+			model = SVR(kernel='poly', degree=1)
+			#from sklearn.ensemble import AdaBoostRegressor
+			#model = AdaBoostRegressor()
+			cols = list(self.df.columns[self.state])
+			df = self.df[cols]
+			data = df.values
+			wall = int(len(data) * 0.8)
+			X = data[:-1,:]
+			X_train = X[:wall]
+			X_test = X[wall:]
+			y = data[1:, 0]
+			y_train = y[:wall]
+			y_test = y[wall:]
+
+			model.fit(X_train, y_train)
+			pred = model.predict(X_test)
+
+			mse = mean_squared_error(pred, y_test)
+			return mse
+
+	n_chars = dataFrame.shape[1]
+	initial = np.random.randint(2, size=n_chars)
+	initial = np.array([bool(x) for x in initial])
+	ga = Sas(initial, dataFrame)
+	ga.steps = 10000
+	ga.copy_strategy = "slice"
+	result, mse = ga.anneal()
+	cols = np.array(dataFrame.columns)
+	cols = cols[result]
+	df = dataFrame[cols]
+	df.to_csv('forecast-competition-complete_selected.csv')
 
 
 if __name__ == '__main__':
