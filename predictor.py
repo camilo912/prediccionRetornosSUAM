@@ -99,7 +99,8 @@ def transform_values(data, n_lags, n_series, dim, n_pca=0, m_n=0):
 	global scaler
 	train_size = 0.8
 	n_features = data.shape[1]
-	reframed = series_to_supervised(data, n_lags, 1)
+	reframed = series_to_supervised(data, n_lags, n_series)
+
 	# print(scaler.inverse_transform(reframed.values[-1,-50:].reshape(1, -1)))
 	values = reframed.values # if n_lags = 1 then shape = (349, 100), if n_lags = 2 then shape = (348, 150)
 	# n_examples for training set
@@ -108,12 +109,21 @@ def transform_values(data, n_lags, n_series, dim, n_pca=0, m_n=0):
 	test = values[n_train:, :]
 	# observations for training, that is to say, series in the times (t-n_lags:t-1) taking t-1 because observations in time t is for testing
 	n_obs = n_lags * n_features
+
+	# for only testing y, y only contains target variable in different times
+	# cols = [('var%d(t-%d)' % (j+1, i)) for j in range(n_features) for i in range(n_lags, 0, -1)]
+	cols = ['var1(t)']
+	cols += ['var1(t+%d)' % (i) for i in range(1, n_series)]
+	y_o = reframed[cols].values
+	train_o = y_o[:n_train]
+	test_o = y_o[n_train:]
+
 	if(-n_features + n_series == 0):
-		train_X, train_y = train[:, :n_obs], train[:, -n_features:]
-		test_X, test_y = test[:, :n_obs], test[:, -n_features:]
+		train_X, train_y = train[:, :n_obs], train_o[:, -n_features:]
+		test_X, test_y = test[:, :n_obs], test_o[:, -n_features:]
 	else:
-		train_X, train_y = train[:, :n_obs], train[:, -n_features:-n_features + n_series]
-		test_X, test_y = test[:, :n_obs], test[:, -n_features:-n_features + n_series]
+		train_X, train_y = train[:, :n_obs], train_o[:, -n_series:]
+		test_X, test_y = test[:, :n_obs], test_o[:, -n_series:]
 	
 	# # PCA
 	# train_X = train_X.reshape((train_X.shape[0]* n_lags, n_features))
@@ -141,13 +151,12 @@ def transform_values(data, n_lags, n_series, dim, n_pca=0, m_n=0):
 		last_values = np.append(test_X[-1,1:n_lags,:], [test[-1,-n_features:]], axis=0)
 	else:
 		last_values = np.append(test_X[-1, n_features:].reshape(1,-1), [test[-1,-n_features:]], axis=1)
-
 	return train_X, test_X, train_y, test_y, last_values
 
 # def train_model(train_X, test_X, train_y, test_y, n_series, n_a, n_epochs, batch_size, i_model):
 def train_model(train_X, test_X, train_y, test_y, n_series, params, i_model, n_features, n_lags, scaler, last_values):
 	if(i_model == 0):
-		return modelos.model_lstm(train_X, test_X, train_y, test_y, n_series, params['n_a'], params['n_epochs'], params['batch_size'], n_features, n_lags, scaler, last_values)
+		return modelos.model_lstm(train_X, test_X, train_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['lr'], params['n_hidden'], n_features, n_lags, scaler, last_values)
 	elif(i_model == 1):
 		return modelos.model_random_forest(train_X, test_X, train_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], n_features, n_lags, scaler, last_values)
 	elif(i_model == 2):
@@ -177,12 +186,15 @@ def objective(params):
 
 	if(i_model == 0):
 		# Make sure parameters that need to be integers are integers
-		for parameter_name in ['n_lags', 'n_a', 'n_epochs', 'batch_size']:
+		for parameter_name in ['n_lags', 'n_epochs', 'batch_size', 'n_hidden']:
 			params[parameter_name] = int(params[parameter_name])
+
+		for parameter_name in ['lr']:
+			params[parameter_name] = float(params[parameter_name])
 
 		start = timer()
 		train_X, test_X, train_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
-		_, rmse, _, _, _ = train_model(train_X, test_X, train_y, test_y, n_series, {'n_a':params['n_a'], 'n_epochs':params['n_epochs'], 'batch_size':params['batch_size']}, i_model, n_features, params['n_lags'], scaler, last_values)
+		rmse, _, _, _ = train_model(train_X, test_X, train_y, test_y, n_series, {'n_epochs':params['n_epochs'], 'batch_size':params['batch_size'], 'lr':params['lr'], 'n_hidden':params['n_hidden']}, i_model, n_features, params['n_lags'], scaler, last_values)
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -240,9 +252,10 @@ def bayes_optimization(i_model):
 	if(i_model == 0):
 		# space
 		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
-				'n_a': hp.quniform('n_a', 10, 300, 1),
 				'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
-				'batch_size': hp.quniform('batch_size', 5, 100, 1)}
+				'batch_size': hp.quniform('batch_size', 5, 100, 1),
+				'n_hidden': hp.quniform('n_hidden', 5, 300, 1),
+				'lr': hp.uniform('lr', 0.0001, 1.0)}
 	elif(i_model == 1):
 		# space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
 		# 		'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
@@ -291,21 +304,23 @@ def bayes_optimization(i_model):
 	return best, bayes_trials_results
 
 
-def predictor(data, id_model, tune):
+def predictor(data, id_model, tune, select, original):
 	global values, scaler, n_features, MAX_EVALS, n_series, train_size, i_model
 	
-	# feature selection
-	#import feature_selection
-	#feature_selection.select_features_sa(pd.DataFrame(data))
-	# feature_selection.select_features_stepwise_forward(df, 13)
-	# feature_selection.select_features_ga(pd.DataFrame(data))
-	df = pd.read_csv('forecast-competition-complete_selected.csv', index_col=0)
-	data = df.values
+	if(select):
+		# feature selection
+		import feature_selection
+		feature_selection.select_features_sa(pd.DataFrame(data))
+		# feature_selection.select_features_stepwise_forward(df, 13)
+		# feature_selection.select_features_ga(pd.DataFrame(data))
+	if(not original):
+		df = pd.read_csv('forecast-competition-complete_selected.csv', index_col=0)
+		data = df.values
 	# values = data
 
 	values, scaler = normalize_data(data)
-	MAX_EVALS = 1000
-	n_series = 1
+	MAX_EVALS = 200
+	n_series = 10
 	train_size = 0.8
 
 	n_features = values.shape[1]
@@ -315,10 +330,10 @@ def predictor(data, id_model, tune):
 		if(i_model == 0):
 			# Parameters
 			best, results = bayes_optimization(i_model)
-			n_lags, n_a, n_epochs, batch_size = int(best['n_lags']), int(best['n_a']), int(best['n_epochs']), int(best['batch_size'])
+			n_lags, n_epochs, batch_size, lr, n_hidden = int(best['n_lags']), int(best['n_epochs']), int(best['batch_size']), float(best['lr']), int(best['n_hidden'])
 			
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
-			history, rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_a':n_a, 'n_epochs':n_epochs, 'batch_size':batch_size}, i_model, n_features, n_lags, scaler, last_values)
+			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'lr':lr, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
 			#plot_data([history.history['loss'], history.history['val_loss']], ['loss', 'val_loss'], 'Loss plot')
 
 			print('rmse: %s ' % rmse)
@@ -362,10 +377,15 @@ def predictor(data, id_model, tune):
 
 	else:
 		if(i_model == 0):
-			n_lags, n_a, n_epochs, batch_size = 3,163,58,35 # 3,250,151,42,5,34#3,194,51,44,11,27#6,226,84,100,4,5#2, 250, 25, 50, 15 #1,12,130,225, 31 #7, 16, 94, 93, 49
+			# without selecting features
+			# n_lags, n_a, n_epochs, batch_size = 3,163,58,35 # 3,250,151,42,5,34#3,194,51,44,11,27#6,226,84,100,4,5#2, 250, 25, 50, 15 #1,12,130,225, 31 #7, 16, 94, 93, 49
+			# with feature selection
+			# batch_size, lr, n_a, n_epochs, n_hidden, n_lags = 75, 0.0001, 274, 191, 50, 31
+			batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.001, 91, 274, 3
+
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
-			history, rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_a':n_a, 'n_epochs':n_epochs, 'batch_size':batch_size}, i_model, n_features, n_lags, scaler, last_values)
+			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_a':n_a, 'n_epochs':n_epochs, 'batch_size':batch_size, 'lr':lr, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
 			#plot_data([history.history['loss'], history.history['val_loss']], ['loss', 'val_loss'], 'Loss plot')
 
 			print('rmse: %s ' % rmse)

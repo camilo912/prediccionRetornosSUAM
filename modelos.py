@@ -1,4 +1,9 @@
 from sklearn.metrics import mean_squared_error
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
 
 import numpy as np
 import math
@@ -6,19 +11,30 @@ import math
 def calculate_rmse(n_series, n_features, n_lags, X, y, scaler, model):
 	yhat = model.predict(X)
 	Xs = np.ones((X.shape[0], n_lags * n_features))
-	yhat = yhat.reshape(-1, 1)
-	#print(yhat.shape)
+	yhat = yhat.reshape(-1, n_series)
+	#print(yhat[:, 0].reshape(-1, 1).shape)
+	#print(Xs[:, -(n_features - 1):].shape)
 	#print(Xs[:, -(n_features - n_series):].shape)
-	inv_yhat = np.concatenate((yhat, Xs[:, -(n_features - n_series):]), axis=1)
-	inv_yhat = scaler.inverse_transform(inv_yhat)
+	inv_yhats = []
+	for i in range(n_series):
+		inv_yhat = np.concatenate((Xs[:, -(n_features - 1):], yhat[:, i].reshape(-1, 1)), axis=1)
+		inv_yhat = scaler.inverse_transform(inv_yhat)
 
-	inv_yhat = inv_yhat[:,0:n_series]
+		inv_yhat = inv_yhat[:, -1]
+		inv_yhats.append(inv_yhat)
+
+	inv_yhat = np.array(inv_yhats).T
 	
 	# invert scaling for actual
 	y = y.reshape((len(y), n_series))
-	inv_y = np.concatenate((y, Xs[:, -(n_features - n_series):]), axis=1)
-	inv_y = scaler.inverse_transform(inv_y)
-	inv_y = inv_y[:,0:n_series]
+	inv_ys = []
+	for i in range(n_series):
+		inv_y = np.concatenate((Xs[:, -(n_features - 1):], y[:, i].reshape(-1, 1)), axis=1)
+		inv_y = scaler.inverse_transform(inv_y)
+		inv_y = inv_y[:,-1]
+		inv_ys.append(inv_y)
+
+	inv_y = np.array(inv_ys).T
 
 
 	# calculate RMSE	
@@ -27,37 +43,131 @@ def calculate_rmse(n_series, n_features, n_lags, X, y, scaler, model):
 
 def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 	if(dim):
-		X = X.reshape(1, n_lags, -1) # only for dim, only for LSTM or RNN
+		X = np.expand_dims(X, axis=0)
+		# X = X.reshape(1, n_lags, -1) # only for dim, only for LSTM or RNN
 	yhat = model.predict(X)
 	if(not dim):
 		yhat = yhat.reshape(-1, 1) # only for no dim
 	Xs = np.ones((X.shape[0], n_lags * n_features))
+	# # inv_yhat = np.concatenate((yhat, Xs[:, -(n_features - n_series):]), axis=1)
 	# inv_yhat = np.concatenate((yhat, Xs[:, -(n_features - n_series):]), axis=1)
-	inv_yhat = np.concatenate((yhat, Xs[:, -(n_features - n_series):]), axis=1)
-	inv_yhat = scaler.inverse_transform(inv_yhat)
+	# inv_yhat = scaler.inverse_transform(inv_yhat)
 
-	inv_yhat = inv_yhat[:,0:n_series]
-	return inv_yhat[-1]
+	# inv_yhat = inv_yhat[:,0:n_series]
+	inv_yhats = []
+	for i in range(n_series):
+		inv_yhat = np.concatenate((Xs[:, -(n_features - 1):], yhat[:, i].reshape(-1, 1)), axis=1)
+		inv_yhat = scaler.inverse_transform(inv_yhat)
+
+		inv_yhat = inv_yhat[:, -1]
+		inv_yhats.append(inv_yhat)
+
+	inv_yhat = np.array(inv_yhats).T
+	#return inv_yhat[-1]
+	return inv_yhat
 
 ############################# LSTM ####################################
-def model_lstm(train_X, test_X, train_y, test_y, n_series, n_a, n_epochs, batch_size, n_features, n_lags, scaler, last_values):
-	from keras.models import Sequential
-	from keras.layers import Dense, Activation, Dropout, Input, LSTM, Reshape, Lambda, RepeatVector
-	# design network
-	model = Sequential()
-	model.add(LSTM(n_a, input_shape=(train_X.shape[1], train_X.shape[2])))
-	model.add(Dense(n_series)) # output of size n_series without activation function
-	model.compile(loss='mean_squared_error', optimizer='adam')
+# def model_lstm(train_X, test_X, train_y, test_y, n_series, n_a, n_epochs, batch_size, n_features, n_lags, scaler, last_values):
+# 	from keras.models import Sequential
+# 	from keras.layers import Dense, Activation, Dropout, Input, LSTM, Reshape, Lambda, RepeatVector
+# 	# design network
+# 	model = Sequential()
+# 	model.add(LSTM(n_a, input_shape=(train_X.shape[1], train_X.shape[2])))
+# 	model.add(Dense(n_series)) # output of size n_series without activation function
+# 	model.compile(loss='mean_squared_error', optimizer='adam')
 	
-	# fit network
-	history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, validation_data=(test_X, test_y), verbose=0, shuffle=False)
+# 	# fit network
+# 	history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, validation_data=(test_X, test_y), verbose=0, shuffle=False)
 
-	# RMSE
-	y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
+# 	# RMSE
+# 	y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
 
-	last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 1)
+# 	last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 1)
 
-	return history, rmse, y, y_hat, last
+# 	return history, rmse, y, y_hat, last
+
+class Data_manager(Dataset):
+	def __init__(self, X, y):
+		self.X, self.y = X, y
+
+	def __len__(self):
+		return len(self.X)
+
+	def __getitem__(self, idx):
+		x = self.X[idx]
+		y = self.y[idx]
+		return x, y
+
+
+def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size, lr, n_hidden, n_features, n_lags, scaler, last_values):
+	trdm = Data_manager(train_X, train_y)
+	tedm = Data_manager(test_X, test_y)
+
+	if(len(train_X) % batch_size == 1 or len(test_X) % batch_size == 1):
+		batch_size += 1
+
+	trdl = DataLoader(trdm, batch_size=batch_size)
+	tedl = DataLoader(tedm, batch_size=len(train_X))
+
+	model = Model(n_hidden, train_X.shape[2], 1, n_series, n_lags)
+	opt = optim.Adam(model.parameters(), lr)
+	loss_fnc = nn.MSELoss()
+	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+	for epoch in range(n_epochs):
+		train_loss = 0
+		for X, y in trdl:
+			X.to(device)
+			y.to(device)
+
+			opt.zero_grad()
+			pred = model(X)
+			loss = loss_fnc(pred, y)
+			loss.backward()
+			opt.step()
+			train_loss += loss.data.item()
+
+		test_loss = 0
+		cont = 0
+		for X, y in tedl:
+			with torch.no_grad():
+				X.to(device)
+				y.to(device)
+
+				pred = model(X)
+				loss = loss_fnc(pred, y)
+				test_loss += loss.data.item()
+				cont += 1
+		print('epoch: ', epoch)
+		print('train loss: ', train_loss)
+		print('test loss: ', test_loss, end='\n\n')
+
+	last = model(torch.Tensor(np.expand_dims(last_values, axis=0), device=device))
+
+	return test_loss, y.detach().numpy(), pred.detach().numpy(), last.detach().numpy()
+
+#def predict(X, y, model):
+#	with torch.no_grad():
+#		pred = model(X)
+
+
+class Model(nn.Module):
+	def __init__(self, n_hidden, n_in, n_out, n_series, n_lags):
+		super().__init__()
+		self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
+		self.n_hidden, self.n_in, self.n_out, self.n_series = n_hidden, n_in, n_out, n_series
+		self.activation = nn.ReLU().to(self.device)
+		self.rnn = nn.LSTM(self.n_in, self.n_hidden, num_layers=self.n_series, batch_first=True).to(self.device)
+		self.reduce = nn.Linear(self.n_hidden, n_out).to(self.device)
+		self.out = nn.Linear(n_lags, self.n_series).to(self.device)
+
+	def forward(self, seq):
+		# seq = self.activation(seq)
+		rnn_out, self.h = self.rnn(seq)
+		# rnn_out = rnn_out[:, -1, :]
+		outp = self.reduce(rnn_out)
+		outp = outp.view(outp.size(0), outp.size(1))
+		out = self.out(outp)
+		return out
 
 ###################### random forest ##########################
 def model_random_forest(train_X, test_X, train_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values):
