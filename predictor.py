@@ -251,7 +251,7 @@ def bayes_optimization(i_model):
 
 	if(i_model == 0):
 		# space
-		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
+		space = {'n_lags': hp.quniform('n_lags', 1, 8, 1),
 				'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
 				'batch_size': hp.quniform('batch_size', 5, 100, 1),
 				'n_hidden': hp.quniform('n_hidden', 5, 300, 1),
@@ -310,8 +310,9 @@ def predictor(data, id_model, tune, select, original):
 	if(select):
 		# feature selection
 		import feature_selection
-		feature_selection.select_features_sa(pd.DataFrame(data))
-		# feature_selection.select_features_stepwise_forward(df, 13)
+		# feature_selection.select_features_sa(pd.DataFrame(data))
+		df = pd.read_csv('forecast-competition-complete.csv', index_col=0, header=0)
+		feature_selection.select_features_stepwise_forward(df, 5)
 		# feature_selection.select_features_ga(pd.DataFrame(data))
 	if(not original):
 		df = pd.read_csv('forecast-competition-complete_selected.csv', index_col=0)
@@ -381,15 +382,16 @@ def predictor(data, id_model, tune, select, original):
 			# n_lags, n_a, n_epochs, batch_size = 3,163,58,35 # 3,250,151,42,5,34#3,194,51,44,11,27#6,226,84,100,4,5#2, 250, 25, 50, 15 #1,12,130,225, 31 #7, 16, 94, 93, 49
 			# with feature selection
 			# batch_size, lr, n_a, n_epochs, n_hidden, n_lags = 75, 0.0001, 274, 191, 50, 31
-			batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.001, 91, 274, 3
+			# batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.0001, 91, 50, 10
+			batch_size, lr, n_epochs, n_hidden, n_lags = 100, 0.001, 250, 150, 25 # n_epochs = 91
 
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
-			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_a':n_a, 'n_epochs':n_epochs, 'batch_size':batch_size, 'lr':lr, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
+			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'lr':lr, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
 			#plot_data([history.history['loss'], history.history['val_loss']], ['loss', 'val_loss'], 'Loss plot')
 
 			print('rmse: %s ' % rmse)
-			# plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
+			plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			# return y_hat[-1]
 			# print(y_hat[-1][0])

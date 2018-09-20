@@ -30,8 +30,8 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 	features.remove(list(dataFrame.columns)[0])
 	missing = features.copy()
 	inside = [list(dataFrame.columns)[0]]
-
-	from sklearn.tree import DecisionTreeRegressor
+	from sklearn.ensemble import RandomForestRegressor
+	# from sklearn.tree import DecisionTreeRegressor
 	while(n_news):
 		fts = list(inside)
 		best = ''
@@ -40,7 +40,8 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 			fts = fts + [ft]
 			scaled, scaler = normalize_data(dataFrame[fts].values)
 			x, y = series_to_supervised(scaled)
-			model = DecisionTreeRegressor()
+			model = RandomForestRegressor()
+			#model = DecisionTreeRegressor()
 			model.fit(x, y)
 			importances = model.feature_importances_
 			if(importances[-1] > best_importance):
