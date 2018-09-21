@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
+from matplotlib import pyplot as plt
 
 import numpy as np
 import math
@@ -119,10 +120,10 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 	trdl = DataLoader(trdm, batch_size=batch_size)
 	tedl = DataLoader(tedm, batch_size=len(train_X))
 
-	model = Model(n_hidden, train_X.shape[2], 1, n_series, n_lags)
+	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+	model = Model(n_hidden, train_X.shape[2], 1, n_lags, device)
 	opt = optim.Adam(model.parameters(), lr)
 	loss_fnc = nn.MSELoss()
-	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	for epoch in range(n_epochs):
 		train_loss = 0
 		for X, y in trdl:
@@ -182,6 +183,54 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 
 	return test_loss, y.detach().numpy(), pred.detach().numpy(), last.detach().numpy()
 
+# def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size, lr, n_hidden, n_features, n_lags, scaler, last_values):
+# 	trdm = Data_manager(train_X, train_y)
+# 	tedm = Data_manager(test_X, test_y)
+# 	# batch_size = train_X.shape[0]
+# 	trdl = DataLoader(trdm, batch_size=batch_size)
+# 	tedl = DataLoader(tedm, batch_size=test_X.shape[0])
+
+# 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# 	model = Model(n_hidden, n_series, train_X.shape[2], 1, n_lags, device)
+# 	opt = optim.Adam(model.parameters(), lr)
+# 	loss_fnc = nn.MSELoss()
+
+# 	for epoch in range(n_epochs):
+
+# 		train_loss = 0
+# 		for X, y in trdl:
+# 			pred = model(X)
+# 			y = y.view(pred.size())
+# 			loss = loss_fnc(pred, y)
+# 			opt.zero_grad()
+# 			loss.backward(retain_graph=True)
+# 			# loss.backward()
+# 			opt.step()
+# 			train_loss += loss.data.item()
+
+# 		test_loss = 0
+# 		for X, y in tedl:
+# 			opt.zero_grad()
+# 			pred = model(X)
+# 			y = y.view(pred.size())
+# 			loss = loss_fnc(pred, y)
+# 			test_loss += loss.data.item()
+
+# 		print('epoch: ', epoch)
+# 		print('train loss: ', train_loss)
+# 		print('test loss: ', test_loss)
+
+# 	# print(pred)
+# 	# print(y)
+
+# 	plt.plot(pred.detach().numpy(), color='r')
+# 	plt.plot(y.detach().numpy(), color='b')
+# 	plt.show()
+
+# 	last = model(torch.Tensor(np.expand_dims(last_values, axis=0), device=device))
+
+# 	return test_loss, y.detach().numpy(), pred.detach().numpy(), last.detach().numpy()
+
 def predict_recursively(X, y, model, loss_fnc, opt, n_out, device, train):
 	out = []
 	total_loss = 0
@@ -217,26 +266,61 @@ def cambiar_X(X, pred, device):
 	return X
 
 
+# class Model(nn.Module):
+# 	def __init__(self, n_hidden, n_in, n_out, n_series, n_lags, device):
+# 		super().__init__()
+# 		# self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
+# 		self.n_hidden, self.n_in, self.n_out, self.n_series, self.device = n_hidden, n_in, n_out, n_series, device
+# 		# self.activation = nn.ReLU().to(self.device)
+# 		# self.rnn = nn.LSTM(self.n_in, self.n_hidden, num_layers=self.n_series, batch_first=True).to(self.device)
+# 		self.rnn = nn.LSTM(self.n_in, n_out, num_layers=self.n_series, batch_first=True).to(self.device)
+# 		# self.reduce = nn.Linear(self.n_hidden, n_out).to(self.device)
+# 		# self.out = nn.Linear(n_lags, self.n_series).to(self.device)
+
+# 		# xavier initialization
+# 		#torch.nn.init.xavier_uniform_(self.reduction.weight)
+# 		#torch.nn.init.xavier_uniform_(self.outer.weight)
+# 		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][0])
+# 		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][1])
+
+# 	def forward(self, seq):
+# 		# seq = self.activation(seq)
+# 		rnn_out, self.h = self.rnn(seq)
+# 		out = rnn_out[:, -1, :]
+# 		# outp = self.reduce(rnn_out)
+# 		#outp = outp.view(outp.size(0), outp.size(1))
+# 		#out = self.out(outp)
+# 		# out = self.activation(outp)
+# 		return out
+
 class Model(nn.Module):
-	def __init__(self, n_hidden, n_in, n_out, n_series, n_lags):
+	def __init__(self, n_hidden, n_in, n_out, n_lags, device):
 		super().__init__()
-		self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-		self.n_hidden, self.n_in, self.n_out, self.n_series = n_hidden, n_in, n_out, n_series
-		# self.activation = nn.ReLU().to(self.device)
-		# self.rnn = nn.LSTM(self.n_in, self.n_hidden, num_layers=self.n_series, batch_first=True).to(self.device)
-		self.rnn = nn.LSTM(self.n_in, n_out, num_layers=self.n_series, batch_first=True).to(self.device)
-		# self.reduce = nn.Linear(self.n_hidden, n_out).to(self.device)
-		# self.out = nn.Linear(n_lags, self.n_series).to(self.device)
+		self.n_hidden, self.n_in, self.n_out, self.n_lags, self.device = n_hidden, n_in, n_out, n_lags, device
+		
+		# layers	
+		self.activation = nn.ReLU().to(self.device)
+		self.rnn = nn.LSTM(self.n_in, self.n_hidden, batch_first=True)
+		self.reduction = nn.Linear(self.n_hidden, 1)
+		self.outer = nn.Linear(self.n_lags, n_out)
+		
+		# xavier initialization
+		torch.nn.init.xavier_uniform_(self.reduction.weight)
+		torch.nn.init.xavier_uniform_(self.outer.weight)
+		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][0])
+		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][1])
 
 	def forward(self, seq):
-		# seq = self.activation(seq)
-		rnn_out, self.h = self.rnn(seq)
-		out = rnn_out[:, -1, :]
-		# outp = self.reduce(rnn_out)
-		#outp = outp.view(outp.size(0), outp.size(1))
-		#out = self.out(outp)
-		# out = self.activation(outp)
+		self.init_hidden(seq.size(0))
+		rnn_out, self.h = self.rnn(seq, self.h)
+		out = self.reduction(rnn_out).view(rnn_out.size(0), rnn_out.size(1))
+		out = self.outer(out).view(rnn_out.size(0))
+		out = self.activation(out)
+
 		return out
+
+	def init_hidden(self, batch_size):
+		self.h = (torch.zeros(1, batch_size, self.n_hidden), torch.zeros(1, batch_size, self.n_hidden))
 
 ###################### random forest ##########################
 def model_random_forest(train_X, test_X, train_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values):

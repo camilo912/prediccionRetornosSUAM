@@ -13,8 +13,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 from sklearn.decomposition import PCA
 
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Input, LSTM, Reshape, Lambda, RepeatVector
+#from keras.models import Sequential
+#from keras.layers import Dense, Activation, Dropout, Input, LSTM, Reshape, Lambda, RepeatVector
 
 from hyperopt import fmin
 from hyperopt import tpe
@@ -383,7 +383,7 @@ def predictor(data, id_model, tune, select, original):
 			# with feature selection
 			# batch_size, lr, n_a, n_epochs, n_hidden, n_lags = 75, 0.0001, 274, 191, 50, 31
 			# batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.0001, 91, 50, 10
-			batch_size, lr, n_epochs, n_hidden, n_lags = 100, 0.001, 250, 150, 25 # n_epochs = 91
+			batch_size, lr, n_epochs, n_hidden, n_lags = 100, 0.001, 50, 150, 25 # n_epochs = 91
 
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
