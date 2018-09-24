@@ -315,7 +315,8 @@ def predictor(data, id_model, tune, select, original):
 		feature_selection.select_features_stepwise_forward(df, 5)
 		# feature_selection.select_features_ga(pd.DataFrame(data))
 	if(not original):
-		df = pd.read_csv('forecast-competition-complete_selected.csv', index_col=0)
+		# df = pd.read_csv('forecast-competition-complete_selected.csv', index_col=0)
+		df = pd.read_csv('forecast-competition-complete_selected_manually.csv', index_col=0)
 		data = df.values
 	# values = data
 
@@ -383,8 +384,11 @@ def predictor(data, id_model, tune, select, original):
 			# with feature selection
 			# batch_size, lr, n_a, n_epochs, n_hidden, n_lags = 75, 0.0001, 274, 191, 50, 31
 			# batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.0001, 91, 50, 10
-			batch_size, lr, n_epochs, n_hidden, n_lags = 100, 0.001, 50, 150, 25 # n_epochs = 91
+			batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.001, 50, 150, 25 # n_epochs = 91
 
+			############# ************** con 0.001 de lr funciona bien con 0.0001 tambien pero con valores diferentes hay vanishing gradients problem
+			##### una intuicion es que con menos lags se multiplican menos los gradietnes y se vuelven menos pequeño por que un numero pequeño por otro peuqueño se vuelve aun mas pequeño
+			###### los parametros de inicializar los Ws del RNN estan guardados, intentar tambien guardar unos buenos para las capas lineales
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'lr':lr, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)

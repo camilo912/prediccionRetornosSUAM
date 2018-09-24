@@ -68,25 +68,6 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 	return inv_yhat
 
 ############################# LSTM ####################################
-# def model_lstm(train_X, test_X, train_y, test_y, n_series, n_a, n_epochs, batch_size, n_features, n_lags, scaler, last_values):
-# 	from keras.models import Sequential
-# 	from keras.layers import Dense, Activation, Dropout, Input, LSTM, Reshape, Lambda, RepeatVector
-# 	# design network
-# 	model = Sequential()
-# 	model.add(LSTM(n_a, input_shape=(train_X.shape[1], train_X.shape[2])))
-# 	model.add(Dense(n_series)) # output of size n_series without activation function
-# 	model.compile(loss='mean_squared_error', optimizer='adam')
-	
-# 	# fit network
-# 	history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, validation_data=(test_X, test_y), verbose=0, shuffle=False)
-
-# 	# RMSE
-# 	y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
-
-# 	last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 1)
-
-# 	return history, rmse, y, y_hat, last
-
 class Data_manager(Dataset):
 	def __init__(self, X, y):
 		self.X, self.y = X, y
@@ -101,15 +82,10 @@ class Data_manager(Dataset):
 
 
 def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size, lr, n_hidden, n_features, n_lags, scaler, last_values):
-	#print(train_X.shape)
 	# insert lag index to data
 	train_X = np.insert(train_X, train_X.shape[-1], np.arange(train_X.shape[1])-n_lags, axis=2)
 	test_X = np.insert(test_X, test_X.shape[-1], np.arange(test_X.shape[1])-n_lags, axis=2)
 	n_features += 1
-	# print(train_X)
-	#print(train_X[:, :, -3:])
-	#print(train_X.shape)
-	#raise Exception('debugging')
 
 	trdm = Data_manager(train_X, train_y)
 	tedm = Data_manager(test_X, test_y)
@@ -124,18 +100,13 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 	model = Model(n_hidden, train_X.shape[2], 1, n_lags, device)
 	opt = optim.Adam(model.parameters(), lr)
 	loss_fnc = nn.MSELoss()
+	historic_loss = []
+	historic_train_loss = []
 	for epoch in range(n_epochs):
 		train_loss = 0
 		for X, y in trdl:
 			X.to(device)
 			y.to(device)
-
-			# opt.zero_grad()
-			# pred = model(X)
-			# loss = loss_fnc(pred, y)
-			# loss.backward()
-			# opt.step()
-			# train_loss += loss.data.item()
 
 			out = []
 			total_loss = 0
@@ -149,8 +120,6 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 
 				# agregar prediccion a la entrada
 				X = cambiar_X(X, pred, device)
-				#print(X[-1, -2:, :])
-			#raise Exception('aca')
 
 			out = np.array(out).T
 			out = torch.Tensor(out, device=device)
@@ -158,18 +127,11 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 			
 			train_loss += loss.data.item()			
 
-			# pred, loss = predict_recursively(X, y, model, loss_fnc, opt, n_series, device, True)
-			# train_loss += loss
-
 		test_loss = 0
 		for X, y in tedl:
 			with torch.no_grad():
 				X.to(device)
 				y.to(device)
-
-				# pred = model(X)
-				# loss = loss_fnc(pred, y)
-				# test_loss += loss.data.item()
 
 				pred, loss = predict_recursively(X, y, model, loss_fnc, opt, n_series, device, False)
 				test_loss += loss
@@ -177,59 +139,15 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 		print('epoch: ', epoch)
 		print('train loss: ', train_loss)
 		print('test loss: ', test_loss, end='\n\n')
+		historic_train_loss.append(train_loss)
+		historic_loss.append(test_loss)
 
-	# last = model(torch.Tensor(np.expand_dims(last_values, axis=0), device=device))
 	last, _ = predict_recursively(torch.Tensor(np.expand_dims(np.insert(last_values, last_values.shape[1], 0, axis=1), axis=0), device=device), torch.zeros(1, n_series).to(device), model, loss_fnc, opt, n_series, device, False)
+	plt.plot(historic_train_loss, color='g', label='historic train loss')
+	plt.plot(historic_loss, color='r', label='historic test loss')
+	plt.show()
 
 	return test_loss, y.detach().numpy(), pred.detach().numpy(), last.detach().numpy()
-
-# def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size, lr, n_hidden, n_features, n_lags, scaler, last_values):
-# 	trdm = Data_manager(train_X, train_y)
-# 	tedm = Data_manager(test_X, test_y)
-# 	# batch_size = train_X.shape[0]
-# 	trdl = DataLoader(trdm, batch_size=batch_size)
-# 	tedl = DataLoader(tedm, batch_size=test_X.shape[0])
-
-# 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# 	model = Model(n_hidden, n_series, train_X.shape[2], 1, n_lags, device)
-# 	opt = optim.Adam(model.parameters(), lr)
-# 	loss_fnc = nn.MSELoss()
-
-# 	for epoch in range(n_epochs):
-
-# 		train_loss = 0
-# 		for X, y in trdl:
-# 			pred = model(X)
-# 			y = y.view(pred.size())
-# 			loss = loss_fnc(pred, y)
-# 			opt.zero_grad()
-# 			loss.backward(retain_graph=True)
-# 			# loss.backward()
-# 			opt.step()
-# 			train_loss += loss.data.item()
-
-# 		test_loss = 0
-# 		for X, y in tedl:
-# 			opt.zero_grad()
-# 			pred = model(X)
-# 			y = y.view(pred.size())
-# 			loss = loss_fnc(pred, y)
-# 			test_loss += loss.data.item()
-
-# 		print('epoch: ', epoch)
-# 		print('train loss: ', train_loss)
-# 		print('test loss: ', test_loss)
-
-# 	# print(pred)
-# 	# print(y)
-
-# 	plt.plot(pred.detach().numpy(), color='r')
-# 	plt.plot(y.detach().numpy(), color='b')
-# 	plt.show()
-
-# 	last = model(torch.Tensor(np.expand_dims(last_values, axis=0), device=device))
-
-# 	return test_loss, y.detach().numpy(), pred.detach().numpy(), last.detach().numpy()
 
 def predict_recursively(X, y, model, loss_fnc, opt, n_out, device, train):
 	out = []
@@ -265,34 +183,6 @@ def cambiar_X(X, pred, device):
 	X = torch.Tensor(X, device=device)
 	return X
 
-
-# class Model(nn.Module):
-# 	def __init__(self, n_hidden, n_in, n_out, n_series, n_lags, device):
-# 		super().__init__()
-# 		# self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-# 		self.n_hidden, self.n_in, self.n_out, self.n_series, self.device = n_hidden, n_in, n_out, n_series, device
-# 		# self.activation = nn.ReLU().to(self.device)
-# 		# self.rnn = nn.LSTM(self.n_in, self.n_hidden, num_layers=self.n_series, batch_first=True).to(self.device)
-# 		self.rnn = nn.LSTM(self.n_in, n_out, num_layers=self.n_series, batch_first=True).to(self.device)
-# 		# self.reduce = nn.Linear(self.n_hidden, n_out).to(self.device)
-# 		# self.out = nn.Linear(n_lags, self.n_series).to(self.device)
-
-# 		# xavier initialization
-# 		#torch.nn.init.xavier_uniform_(self.reduction.weight)
-# 		#torch.nn.init.xavier_uniform_(self.outer.weight)
-# 		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][0])
-# 		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][1])
-
-# 	def forward(self, seq):
-# 		# seq = self.activation(seq)
-# 		rnn_out, self.h = self.rnn(seq)
-# 		out = rnn_out[:, -1, :]
-# 		# outp = self.reduce(rnn_out)
-# 		#outp = outp.view(outp.size(0), outp.size(1))
-# 		#out = self.out(outp)
-# 		# out = self.activation(outp)
-# 		return out
-
 class Model(nn.Module):
 	def __init__(self, n_hidden, n_in, n_out, n_lags, device):
 		super().__init__()
@@ -300,6 +190,7 @@ class Model(nn.Module):
 		
 		# layers	
 		self.activation = nn.ReLU().to(self.device)
+		self.activation2 = nn.Tanh().to(self.device)
 		self.rnn = nn.LSTM(self.n_in, self.n_hidden, batch_first=True)
 		self.reduction = nn.Linear(self.n_hidden, 1)
 		self.outer = nn.Linear(self.n_lags, n_out)
@@ -310,10 +201,40 @@ class Model(nn.Module):
 		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][0])
 		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][1])
 
+		# import pandas as pd
+		# # load parameters
+		# df = pd.read_csv('datos_saved_0.csv')
+		# data = df.values
+		# self.rnn.all_weights[0][0] = data[:self.rnn.all_weights[0][0].shape[1], :].T
+		# self.rnn.all_weights[0][1] = data[self.rnn.all_weights[0][0].shape[1]:, :].T	
+
+		# # save parameters
+		# print(self.rnn.all_weights[0][0].shape)
+		# print(self.rnn.all_weights[0][1].shape)
+		# print(self.reduction.weight.shape)
+		# print(self.outer.weight.shape)
+
+		# a = self.rnn.all_weights[0][0].detach().numpy().T
+		# b = self.rnn.all_weights[0][0].detach().numpy().T
+		# c = np.append(a,b, axis=0)
+		# d = pd.DataFrame(c)
+		# d.to_csv('datos.csv')
+
+		# # save lienar layers parameters
+		# a = self.reduction.weight.detach().numpy().T
+		# b = self.outer.weight.detach().numpy().T
+		# c = np.append(a, b, axis=0)
+		# d = pd.DataFrame(c)
+		# d.to_csv('datos_linear.csv')
+
 	def forward(self, seq):
 		self.init_hidden(seq.size(0))
 		rnn_out, self.h = self.rnn(seq, self.h)
+		if(seq.size(0) > 1):
+			self.bn = nn.BatchNorm1d(rnn_out.size(1))
+			rnn_out = self.bn(rnn_out)
 		out = self.reduction(rnn_out).view(rnn_out.size(0), rnn_out.size(1))
+		# out = self.activation(out)
 		out = self.outer(out).view(rnn_out.size(0))
 		out = self.activation(out)
 
