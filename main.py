@@ -15,7 +15,7 @@ def split_data(data, separator):
 
 def main():
 	model = 0 # id of model to use
-	parameters = 1 # Set to True for performing bayes optimization looking for best parameters
+	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 0 # set to True for training with original data (not feature selected)
 	#file_name = 'forecast-competition-training.csv'

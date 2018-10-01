@@ -102,6 +102,7 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 	loss_fnc = nn.MSELoss()
 	historic_loss = []
 	historic_train_loss = []
+	debugs = []
 	for epoch in range(n_epochs):
 		train_loss = 0
 		for X, y in trdl:
@@ -111,7 +112,8 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 			out = []
 			total_loss = 0
 			for i in range(n_series):
-				pred = model(X)
+				pred, ming1, ming2, avgg1, avgg2, maxg1, maxg2 = model(X)
+				debugs.append([ming1, ming2, avgg1, avgg2, maxg1, maxg2])
 				loss = loss_fnc(pred.view(-1), y[:, i])
 				opt.zero_grad()
 				loss.backward()
@@ -141,6 +143,18 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 		print('test loss: ', test_loss, end='\n\n')
 		historic_train_loss.append(train_loss)
 		historic_loss.append(test_loss)
+		# raise Exception('una iteracion exception')
+	tmp = np.array(debugs)
+	plt.subplot(3, 1, 1)
+	plt.plot(tmp[:, 0], color='b')
+	plt.plot(tmp[:, 1], color='r')
+	plt.subplot(3, 1, 2)
+	plt.plot(tmp[:, 2], color='b')
+	plt.plot(tmp[:, 3], color='r')
+	plt.subplot(3, 1, 3)
+	plt.plot(tmp[:, 4], color='b')
+	plt.plot(tmp[:, 5], color='r')
+	plt.show()
 
 	last, _ = predict_recursively(torch.Tensor(np.expand_dims(np.insert(last_values, last_values.shape[1], 0, axis=1), axis=0), device=device), torch.zeros(1, n_series).to(device), model, loss_fnc, opt, n_series, device, False)
 	plt.plot(historic_train_loss, color='g', label='historic train loss')
@@ -153,7 +167,7 @@ def predict_recursively(X, y, model, loss_fnc, opt, n_out, device, train):
 	out = []
 	total_loss = 0
 	for i in range(n_out):
-		pred = model(X)
+		pred, _, _, _, _, _, _ = model(X)
 		if(train):
 			loss = loss_fnc(pred.view(-1), y[:, i])
 			opt.zero_grad()
@@ -229,16 +243,41 @@ class Model(nn.Module):
 
 	def forward(self, seq):
 		self.init_hidden(seq.size(0))
+		# if(seq.size(0) > 1):
+		# 	self.bn = nn.BatchNorm1d(seq.size(1))
+		# 	seq = self.bn(seq)
 		rnn_out, self.h = self.rnn(seq, self.h)
-		if(seq.size(0) > 1):
-			self.bn = nn.BatchNorm1d(rnn_out.size(1))
-			rnn_out = self.bn(rnn_out)
+		# if(seq.size(0) > 1):
+		# 	self.bn = nn.BatchNorm1d(rnn_out.size(1))
+		# 	rnn_out = self.bn(rnn_out)
 		out = self.reduction(rnn_out).view(rnn_out.size(0), rnn_out.size(1))
 		# out = self.activation(out)
-		out = self.outer(out).view(rnn_out.size(0))
+		# out = self.outer(out).view(rnn_out.size(0))
+		out = out[:, -1].view(rnn_out.size(0))
 		out = self.activation(out)
+		grad1 = [abs(x) for x in self.rnn.all_weights[0][0].detach().numpy()]
+		grad2 = [abs(x) for x in self.rnn.all_weights[0][1].detach().numpy()]
+		grad3 = [abs(x) for x in self.reduction.weight.detach().numpy()]
+		grad4 = [abs(x) for x in self.outer.weight.detach().numpy()]
+		# suma = np.sum(grad1) + np.sum(grad2) + np.sum(grad3) + np.sum(grad4)
+		# print('suma gradientes: ', suma)
 
-		return out
+		# print('min grad1: ', np.min(grad1))
+		# print('min grad2: ', np.min(grad2))
+		# print('min grad3: ', np.min(grad3))
+		# print('min grad4: ', np.min(grad4))
+
+		# print('avg grad1: ', np.mean(grad1))
+		# print('avg grad2: ', np.mean(grad2))
+		# print('avg grad3: ', np.mean(grad3))
+		# print('avg grad4: ', np.mean(grad4))
+
+		# print('max grad1: ', np.max(grad1))
+		# print('max grad2: ', np.max(grad2))
+		# print('max grad3: ', np.max(grad3))
+		# print('max grad4: ', np.max(grad4))
+
+		return out, np.min(grad1), np.min(grad2), np.mean(grad1), np.mean(grad2), np.max(grad1), np.max(grad2)
 
 	def init_hidden(self, batch_size):
 		self.h = (torch.zeros(1, batch_size, self.n_hidden), torch.zeros(1, batch_size, self.n_hidden))
