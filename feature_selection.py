@@ -54,7 +54,7 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 		n_news -= 1
 
 	df = dataFrame[inside]
-	df.to_csv('forecast-competition-complete_selected.csv')
+	df.to_csv('data/forecast-competition-complete_selected.csv')
 
 def select_features_ga(dataFrame):
 	n_generations = 12
@@ -121,7 +121,7 @@ def select_features_ga(dataFrame):
 
 	cols = columns[villagers[np.where(losses == np.min(losses))[0][0]]]
 	df = dataFrame[cols]
-	df.to_csv('forecast-competition-complete_selected.csv')
+	df.to_csv('data/forecast-competition-complete_selected.csv')
 
 def select_features_sa(dataFrame):
 	from simanneal import Annealer
@@ -172,7 +172,7 @@ def select_features_sa(dataFrame):
 	cols = np.array(dataFrame.columns)
 	cols = cols[result]
 	df = dataFrame[cols]
-	df.to_csv('forecast-competition-complete_selected.csv')
+	df.to_csv('data/forecast-competition-complete_selected.csv')
 
 
 if __name__ == '__main__':

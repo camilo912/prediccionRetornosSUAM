@@ -15,15 +15,15 @@ def split_data(data, separator):
 
 def main():
 	model = 0 # id of model to use
-	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
+	parameters = 1 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
-	original = 0 # set to True for training with original data (not feature selected)
+	original = 1 # set to True for training with original data (not feature selected)
 	#file_name = 'forecast-competition-training.csv'
-	file_name = 'forecast-competition-complete.csv'
+	file_name = 'data/forecast-competition-complete.csv'
 	header, index_col = 0, 0
 	dataframe = load_data(file_name, header, index_col)
 	df = pd.DataFrame()
-	f = open('resultados.csv', 'w')
+	f = open('results/resultados.csv', 'w')
 	writer = csv.writer(f)
 
 	# chose the feature to predict
@@ -40,13 +40,17 @@ def main():
 	maxi = max(dataframe.loc[:,out].values)
 	rango = maxi - mini
 
+	o, p = [], []
+
 	for i in range(400, 401): # 500 max
 		print(i)
 		train, test = split_data(dataframe.values, i)
 
-		pred = predictor.predictor(train, model, parameters, select, original)[0]
+		pred = predictor.predictor(train, model, parameters, select, original)#[0]
 
-		actual = test[0:10, 0]
+		# actual = test[0:10, 0]
+		actual = test[0, 0]
+		#print(pred.shape)
 
 		#print('pred: %.20f' % pred)
 		print('pred:', pred)
@@ -55,9 +59,14 @@ def main():
 		#print('diff: %.20f, %.2f%%  \n\n' % (np.abs(actual - pred), np.abs((actual - pred) / rango)*100))
 		df = df.append(pd.Series([pred]), ignore_index=True)
 		writer.writerow([pred])
-		plt.plot(pred, color='r')
-		plt.plot(actual, color='b')
-		plt.show()
+		o.append(float(actual))
+		p.append(float(pred))
+		#plt.plot(pred, color='r')
+		#plt.plot(actual, color='b')
+		#plt.show()
+	plt.plot(p, color='r')
+	plt.plot(o, color='b')
+	plt.show()
 
 	df.columns=[out]
 	print(df)

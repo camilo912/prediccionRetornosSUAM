@@ -124,6 +124,8 @@ def transform_values(data, n_lags, n_series, dim, n_pca=0, m_n=0):
 	else:
 		train_X, train_y = train[:, :n_obs], train_o[:, -n_series:]
 		test_X, test_y = test[:, :n_obs], test_o[:, -n_series:]
+		#train_X, train_y = train[:, :n_obs], train[:, -n_features:]
+		#test_X, test_y = test[:, :n_obs], test[:, -n_features:]
 	
 	# # PCA
 	# train_X = train_X.reshape((train_X.shape[0]* n_lags, n_features))
@@ -149,6 +151,7 @@ def transform_values(data, n_lags, n_series, dim, n_pca=0, m_n=0):
 		train_X = train_X.reshape((train_X.shape[0], n_lags, n_features))
 		test_X = test_X.reshape((test_X.shape[0], n_lags, n_features))
 		last_values = np.append(test_X[-1,1:n_lags,:], [test[-1,-n_features:]], axis=0)
+		# last_values = np.insert(test_X[-10:,1:n_lags,:], n_lags-1, test[-10:,-n_features:], axis=1)
 	else:
 		last_values = np.append(test_X[-1, n_features:].reshape(1,-1), [test[-1,-n_features:]], axis=1)
 	return train_X, test_X, train_y, test_y, last_values
@@ -170,6 +173,20 @@ def plot_data(data, labels, title):
 	plt.figure()
 	for i in range(len(data)):
 		plt.plot(data[i], label=labels[i])
+	plt.suptitle(title, fontsize=16)
+	plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=2)
+	plt.show()
+
+def plot_data_lagged(data, labels, title):
+	plt.figure()
+	plt.plot(data[0][0, :], label=labels[0])
+	for i in range(len(data[1])):
+		print(i)
+		padding = [None for j in range(i*len(data[1][0]))]
+		print(padding)
+		print(data[1][i])
+		print(padding + data[1][i]) # esto debe funcionar para graficar los datos con lag y mirar tendencia como en el paper que mando daniel en la funcion plot_results_multiple
+		plt.plot(padding + data[1][i], label=labels[1] + str(i+1))
 	plt.suptitle(title, fontsize=16)
 	plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=2)
 	plt.show()
@@ -311,18 +328,18 @@ def predictor(data, id_model, tune, select, original):
 		# feature selection
 		import feature_selection
 		# feature_selection.select_features_sa(pd.DataFrame(data))
-		df = pd.read_csv('forecast-competition-complete.csv', index_col=0, header=0)
+		df = pd.read_csv('data/forecast-competition-complete.csv', index_col=0, header=0)
 		feature_selection.select_features_stepwise_forward(df, 5)
 		# feature_selection.select_features_ga(pd.DataFrame(data))
 	if(not original):
-		# df = pd.read_csv('forecast-competition-complete_selected.csv', index_col=0)
-		df = pd.read_csv('forecast-competition-complete_selected_manually.csv', index_col=0)
+		# df = pd.read_csv('data/forecast-competition-complete_selected.csv', index_col=0)
+		df = pd.read_csv('data/forecast-competition-complete_selected_manually.csv', index_col=0)
 		data = df.values
 	# values = data
 
 	values, scaler = normalize_data(data)
-	MAX_EVALS = 200
-	n_series = 10
+	MAX_EVALS = 100
+	n_series = 1
 	train_size = 0.8
 
 	n_features = values.shape[1]
@@ -384,7 +401,7 @@ def predictor(data, id_model, tune, select, original):
 			# with feature selection
 			# batch_size, lr, n_a, n_epochs, n_hidden, n_lags = 75, 0.0001, 274, 191, 50, 31
 			# batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.0001, 91, 50, 10
-			batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.001, 150, 50, 5 # n_epochs = 91
+			batch_size, lr, n_epochs, n_hidden, n_lags = 35, 0.001, 58, 163, 3
 
 			############# ************** con 0.001 de lr funciona bien con 0.0001 tambien pero con valores diferentes hay vanishing gradients problem
 			##### una intuicion es que con menos lags se multiplican menos los gradietnes y se vuelven menos pequeño por que un numero pequeño por otro peuqueño se vuelve aun mas pequeño
@@ -393,9 +410,12 @@ def predictor(data, id_model, tune, select, original):
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'lr':lr, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
 			#plot_data([history.history['loss'], history.history['val_loss']], ['loss', 'val_loss'], 'Loss plot')
-
 			print('rmse: %s ' % rmse)
-			plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
+			# plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
+			# plot_data_lagged([y, y_hat], ['y', 'y_hat'], 'Test plot')
+
+			#for i in range(10):
+			#	plot_data([y[i], y_hat[i]], ['y', 'y_hat'], 'Test plot')
 
 			# return y_hat[-1]
 			# print(y_hat[-1][0])

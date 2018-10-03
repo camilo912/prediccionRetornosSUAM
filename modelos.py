@@ -68,219 +68,108 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 	return inv_yhat
 
 ############################# LSTM ####################################
-class Data_manager(Dataset):
-	def __init__(self, X, y):
-		self.X, self.y = X, y
-
-	def __len__(self):
-		return len(self.X)
-
-	def __getitem__(self, idx):
-		x = self.X[idx]
-		y = self.y[idx]
-		return x, y
-
-
 def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size, lr, n_hidden, n_features, n_lags, scaler, last_values):
-	# insert lag index to data
-	train_X = np.insert(train_X, train_X.shape[-1], np.arange(train_X.shape[1])-n_lags, axis=2)
-	test_X = np.insert(test_X, test_X.shape[-1], np.arange(test_X.shape[1])-n_lags, axis=2)
-	n_features += 1
+	# from keras.layers import Dense, Activation, Dropout, LSTM
+	# from keras.models import Sequential
 
-	trdm = Data_manager(train_X, train_y)
-	tedm = Data_manager(test_X, test_y)
+	# drop_p = 0.05
+	# n_out = n_series
 
-	if(len(train_X) % batch_size == 1 or len(test_X) % batch_size == 1):
-		batch_size += 1
+	# model = Sequential()
+	# model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
+	# #model.add(Dropout(drop_p))
+	# #model.add(LSTM(n_hidden, input_shape=(None, None), activation='relu'))
+	# #model.add(Dropout(drop_p))
+	# #model.add(Dense(n_features, activation='linear'))
+	# model.add(Dense(n_features))
 
-	trdl = DataLoader(trdm, batch_size=batch_size)
-	tedl = DataLoader(tedm, batch_size=len(train_X))
+	# model.compile(loss='mse', optimizer='adam')
+	# #print(train_X.shape)
+	# #print(train_y.shape)
+	# model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=0)
 
-	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-	model = Model(n_hidden, train_X.shape[2], 1, n_lags, device)
-	opt = optim.Adam(model.parameters(), lr)
-	loss_fnc = nn.MSELoss()
-	historic_loss = []
-	historic_train_loss = []
-	debugs = []
-	for epoch in range(n_epochs):
-		train_loss = 0
-		for X, y in trdl:
-			X.to(device)
-			y.to(device)
+	# # predict testing
+	# y = []
+	# y_hat = []
+	# # for i in range(len(test_X) - n_out):
+	# for i in range(test_X):
+	# 	x = test_X[i]
+	# 	#print(x.shape)
+	# 	#raise Exception('Debug')
+	# 	v_arr = []
+	# 	pred_arr = []
+	# 	for j in range(n_out):
+	# 		pred = model.predict(np.expand_dims(x, axis=0))
+	# 		v_arr.append(test_y[i])#[0])	
+	# 		pred_arr.append(pred[-1])#[0])
+	# 		x = np.roll(x, -1, axis=0)
+	# 		x[-1, :] = pred[-1]
+	# 	y.append(v_arr)
+	# 	y_hat.append(pred_arr)
 
-			out = []
-			total_loss = 0
-			for i in range(n_series):
-				pred, ming1, ming2, avgg1, avgg2, maxg1, maxg2 = model(X)
-				debugs.append([ming1, ming2, avgg1, avgg2, maxg1, maxg2])
-				loss = loss_fnc(pred.view(-1), y[:, i])
-				opt.zero_grad()
-				loss.backward()
-				opt.step()
-				out.append(pred.detach().numpy().ravel())
+	# y = np.array(y)
+	# y = y.reshape(y.shape[:2])
+	# y_hat = np.array(y_hat)
+	# y_hat = y_hat.reshape(y_hat.shape[:2])
 
-				# agregar prediccion a la entrada
-				X = cambiar_X(X, pred, device)
+	# # predict last
+	# x = last_values
+	# last = []
+	# for j in range(n_out):
+	# 		pred = model.predict(np.expand_dims(x, axis=0))
+	# 		last.append(pred[-1])#[0])
+	# 		x = np.roll(x, -1, axis=0)
+	# 		x[-1, :] = pred[-1]
 
-			out = np.array(out).T
-			out = torch.Tensor(out, device=device)
-			loss = loss_fnc(out, y)
-			
-			train_loss += loss.data.item()			
+	# last = np.array(last).reshape(n_out)
+	# rmse = math.sqrt(mean_squared_error(y, y_hat))
 
-		test_loss = 0
-		for X, y in tedl:
-			with torch.no_grad():
-				X.to(device)
-				y.to(device)
+	# # print(last)
+	# # transform last values
+	# tmp = np.zeros((len(last), n_features))
+	# tmp[:, 0] = last
+	# last = scaler.inverse_transform(tmp)[:, 0]
 
-				pred, loss = predict_recursively(X, y, model, loss_fnc, opt, n_series, device, False)
-				test_loss += loss
+	# # tempo = np.zeros((1, n_features))
+	# # tempo0 = scaler.inverse_transform(tempo)
+	# # tempo[0, 0] = 1
+	# # tempo1 = scaler.inverse_transform(tempo)
+	# # print(tempo0)
+	# # print(tempo1)
 
-		print('epoch: ', epoch)
-		print('train loss: ', train_loss)
-		print('test loss: ', test_loss, end='\n\n')
-		historic_train_loss.append(train_loss)
-		historic_loss.append(test_loss)
-		# raise Exception('una iteracion exception')
-	tmp = np.array(debugs)
-	plt.subplot(3, 1, 1)
-	plt.plot(tmp[:, 0], color='b')
-	plt.plot(tmp[:, 1], color='r')
-	plt.subplot(3, 1, 2)
-	plt.plot(tmp[:, 2], color='b')
-	plt.plot(tmp[:, 3], color='r')
-	plt.subplot(3, 1, 3)
-	plt.plot(tmp[:, 4], color='b')
-	plt.plot(tmp[:, 5], color='r')
-	plt.show()
+	# return rmse, y, y_hat, last
 
-	last, _ = predict_recursively(torch.Tensor(np.expand_dims(np.insert(last_values, last_values.shape[1], 0, axis=1), axis=0), device=device), torch.zeros(1, n_series).to(device), model, loss_fnc, opt, n_series, device, False)
-	plt.plot(historic_train_loss, color='g', label='historic train loss')
-	plt.plot(historic_loss, color='r', label='historic test loss')
-	plt.show()
+	from keras.layers import Dense, Activation, Dropout, LSTM
+	from keras.models import Sequential
 
-	return test_loss, y.detach().numpy(), pred.detach().numpy(), last.detach().numpy()
+	drop_p = 0.05
+	n_out = n_series
 
-def predict_recursively(X, y, model, loss_fnc, opt, n_out, device, train):
-	out = []
-	total_loss = 0
-	for i in range(n_out):
-		pred, _, _, _, _, _, _ = model(X)
-		if(train):
-			loss = loss_fnc(pred.view(-1), y[:, i])
-			opt.zero_grad()
-			loss.backward()
-			opt.step()
-		out.append(pred.detach().numpy().ravel())
+	model = Sequential()
+	model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
+	model.add(Dense(n_out, input_shape=(n_hidden,)))
 
-		# agregar prediccion a la entrada
-		X = cambiar_X(X, pred, device)
+	model.compile(loss='mse', optimizer='adam')
+	model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=0)
 
-	out = np.array(out).T
-	out = torch.Tensor(out, device=device)
-	loss = loss_fnc(out, y)
-	
-	total_loss += loss.data.item()
-	
-	return out, total_loss
+	pred = model.predict(test_X)
 
-		
 
-def cambiar_X(X, pred, device):
-	X = X.detach().numpy()
-	X = np.roll(X, -1, 1) # deslizar el arreglo para que la ultima posicion sea la primera y la podamos eliminar
-	X[:, -1, 1:] = X[:, -2, 1:] # colocar constantes las variables exogenas en el futuro
-	X[:, -1, 0] = pred.detach().numpy().ravel() # agregar la prediccion para entrenar con ella
-	X[:, -1, -1] = X[:, -1, -1] + 1.0
-	X = torch.Tensor(X, device=device)
-	return X
+	# predict last
+	last = model.predict(np.expand_dims(last_values, axis=0))
 
-class Model(nn.Module):
-	def __init__(self, n_hidden, n_in, n_out, n_lags, device):
-		super().__init__()
-		self.n_hidden, self.n_in, self.n_out, self.n_lags, self.device = n_hidden, n_in, n_out, n_lags, device
-		
-		# layers	
-		self.activation = nn.ReLU().to(self.device)
-		self.activation2 = nn.Tanh().to(self.device)
-		self.rnn = nn.LSTM(self.n_in, self.n_hidden, batch_first=True)
-		self.reduction = nn.Linear(self.n_hidden, 1)
-		self.outer = nn.Linear(self.n_lags, n_out)
-		
-		# xavier initialization
-		torch.nn.init.xavier_uniform_(self.reduction.weight)
-		torch.nn.init.xavier_uniform_(self.outer.weight)
-		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][0])
-		torch.nn.init.xavier_uniform_(self.rnn.all_weights[0][1])
+	last = np.array(last).reshape(n_out)
+	rmse = math.sqrt(mean_squared_error(test_y, pred))
 
-		# import pandas as pd
-		# # load parameters
-		# df = pd.read_csv('datos_saved_0.csv')
-		# data = df.values
-		# self.rnn.all_weights[0][0] = data[:self.rnn.all_weights[0][0].shape[1], :].T
-		# self.rnn.all_weights[0][1] = data[self.rnn.all_weights[0][0].shape[1]:, :].T	
+	# transform last values
+	tmp = np.zeros((len(last), n_features))
+	tmp[:, 0] = last
+	last = scaler.inverse_transform(tmp)[:, 0]
 
-		# # save parameters
-		# print(self.rnn.all_weights[0][0].shape)
-		# print(self.rnn.all_weights[0][1].shape)
-		# print(self.reduction.weight.shape)
-		# print(self.outer.weight.shape)
+	# return rmse, y, y_hat, last
+	return rmse, test_y, pred, last
 
-		# a = self.rnn.all_weights[0][0].detach().numpy().T
-		# b = self.rnn.all_weights[0][0].detach().numpy().T
-		# c = np.append(a,b, axis=0)
-		# d = pd.DataFrame(c)
-		# d.to_csv('datos.csv')
 
-		# # save lienar layers parameters
-		# a = self.reduction.weight.detach().numpy().T
-		# b = self.outer.weight.detach().numpy().T
-		# c = np.append(a, b, axis=0)
-		# d = pd.DataFrame(c)
-		# d.to_csv('datos_linear.csv')
-
-	def forward(self, seq):
-		self.init_hidden(seq.size(0))
-		# if(seq.size(0) > 1):
-		# 	self.bn = nn.BatchNorm1d(seq.size(1))
-		# 	seq = self.bn(seq)
-		rnn_out, self.h = self.rnn(seq, self.h)
-		# if(seq.size(0) > 1):
-		# 	self.bn = nn.BatchNorm1d(rnn_out.size(1))
-		# 	rnn_out = self.bn(rnn_out)
-		out = self.reduction(rnn_out).view(rnn_out.size(0), rnn_out.size(1))
-		# out = self.activation(out)
-		# out = self.outer(out).view(rnn_out.size(0))
-		out = out[:, -1].view(rnn_out.size(0))
-		out = self.activation(out)
-		grad1 = [abs(x) for x in self.rnn.all_weights[0][0].detach().numpy()]
-		grad2 = [abs(x) for x in self.rnn.all_weights[0][1].detach().numpy()]
-		grad3 = [abs(x) for x in self.reduction.weight.detach().numpy()]
-		grad4 = [abs(x) for x in self.outer.weight.detach().numpy()]
-		# suma = np.sum(grad1) + np.sum(grad2) + np.sum(grad3) + np.sum(grad4)
-		# print('suma gradientes: ', suma)
-
-		# print('min grad1: ', np.min(grad1))
-		# print('min grad2: ', np.min(grad2))
-		# print('min grad3: ', np.min(grad3))
-		# print('min grad4: ', np.min(grad4))
-
-		# print('avg grad1: ', np.mean(grad1))
-		# print('avg grad2: ', np.mean(grad2))
-		# print('avg grad3: ', np.mean(grad3))
-		# print('avg grad4: ', np.mean(grad4))
-
-		# print('max grad1: ', np.max(grad1))
-		# print('max grad2: ', np.max(grad2))
-		# print('max grad3: ', np.max(grad3))
-		# print('max grad4: ', np.max(grad4))
-
-		return out, np.min(grad1), np.min(grad2), np.mean(grad1), np.mean(grad2), np.max(grad1), np.max(grad2)
-
-	def init_hidden(self, batch_size):
-		self.h = (torch.zeros(1, batch_size, self.n_hidden), torch.zeros(1, batch_size, self.n_hidden))
 
 ###################### random forest ##########################
 def model_random_forest(train_X, test_X, train_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values):
