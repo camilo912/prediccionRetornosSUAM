@@ -143,7 +143,7 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 	from keras.models import Sequential
 
 	drop_p = 0.05
-	n_out = n_series
+	n_out = n_features
 
 	model = Sequential()
 	model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
@@ -157,14 +157,13 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 
 	# predict last
 	last = model.predict(np.expand_dims(last_values, axis=0))
-
-	last = np.array(last).reshape(n_out)
+	last = np.array(last)
 	rmse = math.sqrt(mean_squared_error(test_y, pred))
 
 	# transform last values
 	tmp = np.zeros((len(last), n_features))
-	tmp[:, 0] = last
-	last = scaler.inverse_transform(tmp)[:, 0]
+	tmp[:, 0:n_out] = last
+	last = scaler.inverse_transform(tmp)[:, 0:n_out]
 
 	# return rmse, y, y_hat, last
 	return rmse, test_y, pred, last

@@ -122,10 +122,10 @@ def transform_values(data, n_lags, n_series, dim, n_pca=0, m_n=0):
 		train_X, train_y = train[:, :n_obs], train_o[:, -n_features:]
 		test_X, test_y = test[:, :n_obs], test_o[:, -n_features:]
 	else:
-		train_X, train_y = train[:, :n_obs], train_o[:, -n_series:]
-		test_X, test_y = test[:, :n_obs], test_o[:, -n_series:]
-		#train_X, train_y = train[:, :n_obs], train[:, -n_features:]
-		#test_X, test_y = test[:, :n_obs], test[:, -n_features:]
+		#train_X, train_y = train[:, :n_obs], train_o[:, -n_series:]
+		#test_X, test_y = test[:, :n_obs], test_o[:, -n_series:]
+		train_X, train_y = train[:, :n_obs], train[:, -n_features:]
+		test_X, test_y = test[:, :n_obs], test[:, -n_features:]
 	
 	# # PCA
 	# train_X = train_X.reshape((train_X.shape[0]* n_lags, n_features))
@@ -268,7 +268,7 @@ def bayes_optimization(i_model):
 
 	if(i_model == 0):
 		# space
-		space = {'n_lags': hp.quniform('n_lags', 1, 8, 1),
+		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
 				'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
 				'batch_size': hp.quniform('batch_size', 5, 100, 1),
 				'n_hidden': hp.quniform('n_hidden', 5, 300, 1),
@@ -302,14 +302,14 @@ def bayes_optimization(i_model):
 	of_connection.close()
 
 	# Run optimization
-	best = fmin(fn = objective, space = space, algo = tpe.suggest, max_evals = MAX_EVALS, trials = bayes_trials, rstate = np.random.RandomState(50))
+	best = fmin(fn = objective, space = space, algo = tpe.suggest, max_evals = MAX_EVALS, trials = bayes_trials, rstate = np.random.RandomState(np.random.randint(100)))
 
 	# store best results
 	of_connection = open('bests.txt', 'a')
 	writer = csv.writer(of_connection)
 	bayes_trials_results = sorted(bayes_trials.results, key = lambda x: x['loss'])
 	if(i_model == 0):
-		writer.writerow([bayes_trials_results[0]['loss'], bayes_trials_results[0]['params']['n_lags'], bayes_trials_results[0]['params']['n_a'], bayes_trials_results[0]['params']['n_epochs'], bayes_trials_results[0]['params']['batch_size'], MAX_EVALS])
+		writer.writerow([bayes_trials_results[0]['loss'], bayes_trials_results[0]['params']['n_lags'], bayes_trials_results[0]['params']['n_hidden'], bayes_trials_results[0]['params']['n_epochs'], bayes_trials_results[0]['params']['batch_size'], MAX_EVALS])
 	elif(i_model == 1):
 		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], best['n_estimators'], best['max_features'], best['min_samples'], MAX_EVALS])
 	elif(i_model == 2):
@@ -338,7 +338,7 @@ def predictor(data, id_model, tune, select, original):
 	# values = data
 
 	values, scaler = normalize_data(data)
-	MAX_EVALS = 100
+	MAX_EVALS = 200
 	n_series = 1
 	train_size = 0.8
 
@@ -401,7 +401,11 @@ def predictor(data, id_model, tune, select, original):
 			# with feature selection
 			# batch_size, lr, n_a, n_epochs, n_hidden, n_lags = 75, 0.0001, 274, 191, 50, 31
 			# batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.0001, 91, 50, 10
-			batch_size, lr, n_epochs, n_hidden, n_lags = 35, 0.001, 58, 163, 3
+			# for model with perd to next time and only target variable:
+			# batch_size, lr, n_epochs, n_hidden, n_lags = 67, 0.9974425873058935, 19, 249, 6
+			
+			# batch_size, lr, n_epochs, n_hidden, n_lags = 35, 0.001, 58, 163, 3
+			batch_size, lr, n_epochs, n_hidden, n_lags = 50, 0.4799370248396754, 106, 25, 3
 
 			############# ************** con 0.001 de lr funciona bien con 0.0001 tambien pero con valores diferentes hay vanishing gradients problem
 			##### una intuicion es que con menos lags se multiplican menos los gradietnes y se vuelven menos pequeño por que un numero pequeño por otro peuqueño se vuelve aun mas pequeño
@@ -411,7 +415,7 @@ def predictor(data, id_model, tune, select, original):
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'lr':lr, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
 			#plot_data([history.history['loss'], history.history['val_loss']], ['loss', 'val_loss'], 'Loss plot')
 			print('rmse: %s ' % rmse)
-			# plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
+			plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 			# plot_data_lagged([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			#for i in range(10):
@@ -419,7 +423,7 @@ def predictor(data, id_model, tune, select, original):
 
 			# return y_hat[-1]
 			# print(y_hat[-1][0])
-			return last
+			return last[0][0]
 		elif(i_model == 1):
 			# n_lags, n_estimators, max_features, min_samples = 4, 500, 14, 1
 			n_lags, n_estimators, max_features, min_samples = 4, 762, 18, 3 # for selected features
