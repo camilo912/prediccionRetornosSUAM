@@ -95,13 +95,11 @@ def decompose_pca(X, n_pca, m_n):
 
 	return transformed
 
-def transform_values(data, n_lags, n_series, dim, n_pca=0, m_n=0):
-	global scaler
+def transform_values(data, n_lags, n_series, dim):
 	train_size = 0.8
 	n_features = data.shape[1]
 	reframed = series_to_supervised(data, n_lags, n_series)
 
-	# print(scaler.inverse_transform(reframed.values[-1,-50:].reshape(1, -1)))
 	values = reframed.values # if n_lags = 1 then shape = (349, 100), if n_lags = 2 then shape = (348, 150)
 	# n_examples for training set
 	n_train = int(values.shape[0] * train_size)
@@ -119,33 +117,14 @@ def transform_values(data, n_lags, n_series, dim, n_pca=0, m_n=0):
 	test_o = y_o[n_train:]
 
 	if(-n_features + n_series == 0):
-		train_X, train_y = train[:, :n_obs], train_o[:, -n_features:]
-		test_X, test_y = test[:, :n_obs], test_o[:, -n_features:]
+		train_X, train_y = train[:, :n_obs], train_o[:, n_obs:n_obs+n_features]
+		test_X, test_y = test[:, :n_obs], test_o[:, n_obs:n_obs+n_features]
 	else:
 		#train_X, train_y = train[:, :n_obs], train_o[:, -n_series:]
 		#test_X, test_y = test[:, :n_obs], test_o[:, -n_series:]
-		train_X, train_y = train[:, :n_obs], train[:, -n_features:]
-		test_X, test_y = test[:, :n_obs], test[:, -n_features:]
-	
-	# # PCA
-	# train_X = train_X.reshape((train_X.shape[0]* n_lags, n_features))
-	# test_X = test_X.reshape((test_X.shape[0]* n_lags, n_features))
+		train_X, train_y = train[:, :n_obs], train[:, n_obs:n_obs+n_features]
+		test_X, test_y = test[:, :n_obs], test[:, n_obs:n_obs+n_features]
 
-	# X = np.concatenate((train_X, test_X), axis=0)
-
-	# # My implementation
-	# X = decompose_pca(X, n_pca, m_n)
-	# # # scikit learn implementation
-	# # pca = PCA(n_components=n_pca)
-	# # X = pca.fit_transform(X)
-
-	# train_X, test_X = X[:n_train*n_lags], X[n_train*n_lags:]
-
-	# train_X = train_X.reshape((int(train_X.shape[0]/n_lags), n_lags, n_pca))
-	# test_X = test_X.reshape((int(test_X.shape[0]/n_lags), n_lags, n_pca))
-
-
-	# implementation without PCA
 	# reshape input to be 3D [n_examples, timesteps, features]
 	if(dim):
 		train_X = train_X.reshape((train_X.shape[0], n_lags, n_features))
