@@ -49,7 +49,7 @@ def main():
 		pred = predictor.predictor(train, model, parameters, select, original)#[0]
 
 		# actual = test[0:10, 0]
-		actual = test[0, 0]
+		actual = test[0:len(pred), 0]
 		#print(pred.shape)
 
 		#print('pred: %.20f' % pred)
@@ -59,14 +59,14 @@ def main():
 		#print('diff: %.20f, %.2f%%  \n\n' % (np.abs(actual - pred), np.abs((actual - pred) / rango)*100))
 		df = df.append(pd.Series([pred]), ignore_index=True)
 		writer.writerow([pred])
-		o.append(float(actual))
-		p.append(float(pred))
-		#plt.plot(pred, color='r')
-		#plt.plot(actual, color='b')
-		#plt.show()
-	plt.plot(p, color='r')
-	plt.plot(o, color='b')
-	plt.show()
+		#o.append(actual)
+		#p.append(pred)
+		plt.plot(pred, color='r')
+		plt.plot(actual, color='b')
+		plt.show()
+	#plt.plot(p, color='r')
+	#plt.plot(o, color='b')
+	#plt.show()
 
 	df.columns=[out]
 	print(df)

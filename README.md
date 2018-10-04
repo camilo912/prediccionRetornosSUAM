@@ -1,2 +1,2 @@
 # prediccionRetornosSUAM
-proyecto de predccionde retornos apra SUAM
+proyecto de predicción de retornos para SUAM

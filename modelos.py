@@ -152,21 +152,52 @@ def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size,
 	model.compile(loss='mse', optimizer='adam')
 	model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=0)
 
-	pred = model.predict(test_X)
+	
+	y = []
+	y_hat = []
+	for i in range(len(test_X) - n_series):
+		x = np.expand_dims(test_X[i], axis=0)
+		v_arr = []
+		pred_arr = []
+		for j in range(n_series):
+			pred = model.predict(x).ravel()
+			pred_arr.append(pred)
+			v_arr.append(test_y[i+j])
+			x = np.roll(x, -1, axis=0)
+			x[-1, :] = pred
+		y.append(v_arr)
+		y_hat.append(pred_arr)
+	y = np.array(y).squeeze()
+	y_hat = np.array(y_hat).squeeze()
+
+	
+	# pred = model.predict(test_X)
 
 
 	# predict last
-	last = model.predict(np.expand_dims(last_values, axis=0))
+	last = []
+	x = np.expand_dims(last_values, axis=0)
+	for i in range(n_series):
+		pred = model.predict(x).ravel()
+		last.append(pred)
+		x = np.roll(x, -1, axis=0)
+		x[-1, :] = pred
 	last = np.array(last)
-	rmse = math.sqrt(mean_squared_error(test_y, pred))
+
+	#last = model.predict(np.expand_dims(last_values, axis=0))
+
+	rmse = math.sqrt(mean_squared_error(y.reshape((len(y), -1)), y_hat.reshape((len(y), -1))))
+	# rmse = np.sum([math.sqrt(mean_squared_error(y[i], y_hat[i])) for i in range(len(y))])
+	# rmse = math.sqrt(mean_squared_error(y, y_hat))
+	# rmse = math.sqrt(mean_squared_error(test_y, pred))
 
 	# transform last values
 	tmp = np.zeros((len(last), n_features))
 	tmp[:, 0:n_out] = last
-	last = scaler.inverse_transform(tmp)[:, 0:n_out]
+	last = scaler.inverse_transform(tmp)[:, 0]
 
-	# return rmse, y, y_hat, last
-	return rmse, test_y, pred, last
+	return rmse, y, y_hat, last
+	# return rmse, test_y, pred, last
 
 
 

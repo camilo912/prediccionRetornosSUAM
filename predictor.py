@@ -179,14 +179,20 @@ def plot_data(data, labels, title):
 
 def plot_data_lagged(data, labels, title):
 	plt.figure()
-	plt.plot(data[0][0, :], label=labels[0])
+	plt.plot(data[0], label=labels[0])
 	for i in range(len(data[1])):
-		print(i)
-		padding = [None for j in range(i*len(data[1][0]))]
-		print(padding)
-		print(data[1][i])
-		print(padding + data[1][i]) # esto debe funcionar para graficar los datos con lag y mirar tendencia como en el paper que mando daniel en la funcion plot_results_multiple
-		plt.plot(padding + data[1][i], label=labels[1] + str(i+1))
+		padding = [None for _ in range(i)]
+		plt.plot(padding + list(data[1][i]), label=labels[1] + str(i+1))
+	plt.suptitle(title, fontsize=16)
+	plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=2)
+	plt.show()
+
+def plot_data_lagged_blocks(data, labels, title):
+	plt.figure()
+	plt.plot(data[0], label=labels[0])
+	for i in range(0, len(data[1]), len(data[1][0])):
+		padding = [None for _ in range(i)]
+		plt.plot(padding + list(data[1][i]), label=labels[1] + str(i+1))
 	plt.suptitle(title, fontsize=16)
 	plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=2)
 	plt.show()
@@ -339,7 +345,7 @@ def predictor(data, id_model, tune, select, original):
 
 	values, scaler = normalize_data(data)
 	MAX_EVALS = 200
-	n_series = 1
+	n_series = 10
 	train_size = 0.8
 
 	n_features = values.shape[1]
@@ -395,35 +401,36 @@ def predictor(data, id_model, tune, select, original):
 			return last
 
 	else:
-		if(i_model == 0):
-			# without selecting features
-			# n_lags, n_a, n_epochs, batch_size = 3,163,58,35 # 3,250,151,42,5,34#3,194,51,44,11,27#6,226,84,100,4,5#2, 250, 25, 50, 15 #1,12,130,225, 31 #7, 16, 94, 93, 49
-			# with feature selection
-			# batch_size, lr, n_a, n_epochs, n_hidden, n_lags = 75, 0.0001, 274, 191, 50, 31
-			# batch_size, lr, n_epochs, n_hidden, n_lags = 75, 0.0001, 91, 50, 10
-			# for model with perd to next time and only target variable:
-			# batch_size, lr, n_epochs, n_hidden, n_lags = 67, 0.9974425873058935, 19, 249, 6
-			
+		if(i_model == 0):			
 			# batch_size, lr, n_epochs, n_hidden, n_lags = 35, 0.001, 58, 163, 3
+			# approach for max 8 lags
+			# batch_size, lr, n_epochs, n_hidden, n_lags = 50, 0.4799370248396754, 106, 25, 3
+			# approach for max 50 lags
 			batch_size, lr, n_epochs, n_hidden, n_lags = 50, 0.4799370248396754, 106, 25, 3
-
-			############# ************** con 0.001 de lr funciona bien con 0.0001 tambien pero con valores diferentes hay vanishing gradients problem
-			##### una intuicion es que con menos lags se multiplican menos los gradietnes y se vuelven menos pequeño por que un numero pequeño por otro peuqueño se vuelve aun mas pequeño
-			###### los parametros de inicializar los Ws del RNN estan guardados, intentar tambien guardar unos buenos para las capas lineales
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'lr':lr, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
 			#plot_data([history.history['loss'], history.history['val_loss']], ['loss', 'val_loss'], 'Loss plot')
 			print('rmse: %s ' % rmse)
-			plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
-			# plot_data_lagged([y, y_hat], ['y', 'y_hat'], 'Test plot')
+			# plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
+			plot_data_lagged([test_y[:, 0].ravel(), y_hat[:, :, 0].squeeze()], ['y', 'y_hat'], 'Test plot')
+			plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat[:, :, 0].squeeze()], ['y', 'y_hat'], 'Test plot')
 
-			#for i in range(10):
-			#	plot_data([y[i], y_hat[i]], ['y', 'y_hat'], 'Test plot')
+			# # print test predictions vs observations
+			# mini = 0
+			# maxi = 64
+			# step = 8
+			# n_rows = 2
+			# n_cols = step/n_rows
+			# for i in range(mini, maxi, step):
+			# 	# plot_data([y[i, :, 0], y_hat[i, :, 0]], ['y', 'y_hat'], 'Test plot')
+			# 	for j in range(step):
+			# 		plt.subplot(n_rows,n_cols,j+1)
+			# 		plt.plot(y[i+j, :, 0])
+			# 		plt.plot(y_hat[i+j, :, 0])
+			# 	plt.show()
 
-			# return y_hat[-1]
-			# print(y_hat[-1][0])
-			return last[0][0]
+			return last
 		elif(i_model == 1):
 			# n_lags, n_estimators, max_features, min_samples = 4, 500, 14, 1
 			n_lags, n_estimators, max_features, min_samples = 4, 762, 18, 3 # for selected features
