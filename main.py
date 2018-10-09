@@ -15,7 +15,7 @@ def split_data(data, separator):
 
 def main():
 	model = 0 # id of model to use
-	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
+	parameters = 1 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 1 # set to True for training with original data (not feature selected)
 	#file_name = 'forecast-competition-training.csv'
@@ -23,7 +23,7 @@ def main():
 	header, index_col = 0, 0
 	dataframe = load_data(file_name, header, index_col)
 	df = pd.DataFrame()
-	f = open('results/resultados.csv', 'w')
+	f = open('results/salida_10_periodos.csv', 'w')
 	writer = csv.writer(f)
 
 	# chose the feature to predict
@@ -42,34 +42,38 @@ def main():
 
 	o, p = [], []
 
-	for i in range(400, 401): # 500 max
+	for i in range(400, 401, 1): # 500 max for 10 time steps prediction maximun 490
 		print(i)
 		train, test = split_data(dataframe.values, i)
 
 		pred = predictor.predictor(train, model, parameters, select, original)#[0]
 
-		# actual = test[0:10, 0]
 		actual = test[0:len(pred), 0]
 		#print(pred.shape)
 
-		#print('pred: %.20f' % pred)
 		print('pred:', pred)
-		#print('actual: %.20f' % actual)
 		print('actual:', actual)
-		#print('diff: %.20f, %.2f%%  \n\n' % (np.abs(actual - pred), np.abs((actual - pred) / rango)*100))
 		df = df.append(pd.Series([pred]), ignore_index=True)
 		writer.writerow([pred])
 		#o.append(actual)
 		#p.append(pred)
-		plt.plot(pred, color='r')
-		plt.plot(actual, color='b')
-		plt.show()
-	#plt.plot(p, color='r')
-	#plt.plot(o, color='b')
-	#plt.show()
+		o.extend(actual)
+		p.extend(pred)
+		#plt.plot(pred, color='r')
+		#plt.plot(actual, color='b')
+		#plt.show()
+	plt.plot(p, color='r')
+	plt.plot(o, color='b')
+	# datos = dataframe.values[400:411+10]
+	# plt.plot(datos[:, 0])
+	# for i in range(10):
+	# 	pad = [None for j in range(i)]
+	# 	plt.plot(pad + list(p[i]))
+
+	plt.show()
 
 	df.columns=[out]
-	print(df)
+	# print(df)
 	f.close()
 
 

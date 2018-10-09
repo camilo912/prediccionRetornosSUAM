@@ -1,9 +1,9 @@
 from sklearn.metrics import mean_squared_error
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+#import torch
+#import torch.nn as nn
+#import torch.optim as optim
+#import torch.nn.functional as F
+#from torch.utils.data import Dataset, DataLoader
 from matplotlib import pyplot as plt
 
 import numpy as np
@@ -68,135 +68,62 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 	return inv_yhat
 
 ############################# LSTM ####################################
-def model_lstm(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size, lr, n_hidden, n_features, n_lags, scaler, last_values):
-	# from keras.layers import Dense, Activation, Dropout, LSTM
-	# from keras.models import Sequential
-
-	# drop_p = 0.05
-	# n_out = n_series
-
-	# model = Sequential()
-	# model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
-	# #model.add(Dropout(drop_p))
-	# #model.add(LSTM(n_hidden, input_shape=(None, None), activation='relu'))
-	# #model.add(Dropout(drop_p))
-	# #model.add(Dense(n_features, activation='linear'))
-	# model.add(Dense(n_features))
-
-	# model.compile(loss='mse', optimizer='adam')
-	# #print(train_X.shape)
-	# #print(train_y.shape)
-	# model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=0)
-
-	# # predict testing
-	# y = []
-	# y_hat = []
-	# # for i in range(len(test_X) - n_out):
-	# for i in range(test_X):
-	# 	x = test_X[i]
-	# 	#print(x.shape)
-	# 	#raise Exception('Debug')
-	# 	v_arr = []
-	# 	pred_arr = []
-	# 	for j in range(n_out):
-	# 		pred = model.predict(np.expand_dims(x, axis=0))
-	# 		v_arr.append(test_y[i])#[0])	
-	# 		pred_arr.append(pred[-1])#[0])
-	# 		x = np.roll(x, -1, axis=0)
-	# 		x[-1, :] = pred[-1]
-	# 	y.append(v_arr)
-	# 	y_hat.append(pred_arr)
-
-	# y = np.array(y)
-	# y = y.reshape(y.shape[:2])
-	# y_hat = np.array(y_hat)
-	# y_hat = y_hat.reshape(y_hat.shape[:2])
-
-	# # predict last
-	# x = last_values
-	# last = []
-	# for j in range(n_out):
-	# 		pred = model.predict(np.expand_dims(x, axis=0))
-	# 		last.append(pred[-1])#[0])
-	# 		x = np.roll(x, -1, axis=0)
-	# 		x[-1, :] = pred[-1]
-
-	# last = np.array(last).reshape(n_out)
-	# rmse = math.sqrt(mean_squared_error(y, y_hat))
-
-	# # print(last)
-	# # transform last values
-	# tmp = np.zeros((len(last), n_features))
-	# tmp[:, 0] = last
-	# last = scaler.inverse_transform(tmp)[:, 0]
-
-	# # tempo = np.zeros((1, n_features))
-	# # tempo0 = scaler.inverse_transform(tempo)
-	# # tempo[0, 0] = 1
-	# # tempo1 = scaler.inverse_transform(tempo)
-	# # print(tempo0)
-	# # print(tempo1)
-
-	# return rmse, y, y_hat, last
-
+def model_lstm(train_X, test_X, train_y, test_y, val_X, val_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values):
 	from keras.layers import Dense, Activation, Dropout, LSTM
 	from keras.models import Sequential
+	from keras.optimizers import Adam
 
 	drop_p = 0.05
-	n_out = n_features
+	n_out = n_series
 
 	model = Sequential()
 	model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
 	model.add(Dense(n_out, input_shape=(n_hidden,)))
 
-	model.compile(loss='mse', optimizer='adam')
-	model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=0)
+	opt = Adam(lr=0.001, decay=0.0)
+	model.compile(loss='mse', optimizer=opt)
+	model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=0, shuffle=False)
 
 	
-	y = []
-	y_hat = []
-	for i in range(len(test_X) - n_series):
-		x = np.expand_dims(test_X[i], axis=0)
-		v_arr = []
-		pred_arr = []
-		for j in range(n_series):
-			pred = model.predict(x).ravel()
-			pred_arr.append(pred)
-			v_arr.append(test_y[i+j])
-			x = np.roll(x, -1, axis=0)
-			x[-1, :] = pred
-		y.append(v_arr)
-		y_hat.append(pred_arr)
-	y = np.array(y).squeeze()
-	y_hat = np.array(y_hat).squeeze()
-
-	
-	# pred = model.predict(test_X)
-
+	y = test_y
+	y_hat = model.predict(test_X)
+	y_hat_val = model.predict(val_X)
 
 	# predict last
-	last = []
-	x = np.expand_dims(last_values, axis=0)
-	for i in range(n_series):
-		pred = model.predict(x).ravel()
-		last.append(pred)
-		x = np.roll(x, -1, axis=0)
-		x[-1, :] = pred
-	last = np.array(last)
+	last = model.predict(np.expand_dims(last_values, axis=0))
 
-	#last = model.predict(np.expand_dims(last_values, axis=0))
+	# for test
+	rmses = []
+	rmse = 0
+	weigth = 1.0
+	step = 0.1
+	for i in range(n_out):
+		rmses.append(math.sqrt(mean_squared_error(y[:, i], y_hat[:, i])))
+		rmse += rmses[-1]*weigth
+		weigth -= step
 
-	rmse = math.sqrt(mean_squared_error(y.reshape((len(y), -1)), y_hat.reshape((len(y), -1))))
+	# for validation
+	rmses_val = []
+	rmse_val = 0
+	weigth = 1.0
+	step = 0.1
+	for i in range(n_out):
+		rmses_val.append(math.sqrt(mean_squared_error(val_y[:, i], y_hat_val[:, i])))
+		rmse_val += rmses_val[-1]*weigth
+		weigth -= step
+
+	# rmse = math.sqrt(mean_squared_error(y.reshape((len(y), -1)), y_hat.reshape((len(y), -1))))
 	# rmse = np.sum([math.sqrt(mean_squared_error(y[i], y_hat[i])) for i in range(len(y))])
 	# rmse = math.sqrt(mean_squared_error(y, y_hat))
 	# rmse = math.sqrt(mean_squared_error(test_y, pred))
 
 	# transform last values
-	tmp = np.zeros((len(last), n_features))
-	tmp[:, 0:n_out] = last
+	tmp = np.zeros((last.shape[1], n_features))
+	tmp[:, 0] = last
 	last = scaler.inverse_transform(tmp)[:, 0]
 
-	return rmse, y, y_hat, last
+	return rmse_val, val_y, y_hat_val, last
+	# return rmse, y, y_hat, last
 	# return rmse, test_y, pred, last
 
 

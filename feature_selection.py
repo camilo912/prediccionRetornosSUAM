@@ -57,7 +57,7 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
 def select_features_ga(dataFrame):
-	n_generations = 12
+	n_generations = 1200
 	n_chars = dataFrame.shape[1]
 	n_villagers = max(1, int(n_chars / 2))
 	villagers = np.random.randint(2, size=(n_villagers, n_chars))
@@ -78,8 +78,12 @@ def select_features_ga(dataFrame):
 		
 
 			import predictor
-			from sklearn.tree import DecisionTreeRegressor
-			model = DecisionTreeRegressor()
+			#from sklearn.tree import DecisionTreeRegressor
+			#model = DecisionTreeRegressor()
+			from sklearn.linear_model import LinearRegression
+			model = LinearRegression(n_jobs=-1)
+			#from sklearn.svm import SVR
+			#model = SVR()
 
 			scaled, scaler = predictor.normalize_data(df.values)
 			values, n_lags, n_series = scaled, 4, 1
