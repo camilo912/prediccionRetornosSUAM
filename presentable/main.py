@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import predictor
-import csv
 from matplotlib import pyplot as plt
 
 
@@ -52,9 +51,9 @@ def main():
 		p.append(pred)
 
 	datos = dataframe.values[ini:fin+20]
-	plt.plot(datos[:, 0])
-	for i in range(fin - ini):
-		pad = [None for j in range(i)]
+	plt.plot(datos[:, 0], marker='*', linestyle='-.')
+	for i in range(int(np.floor((fin - ini)/step))):
+		pad = [None for j in range(i*step)]
 		plt.plot(pad + list(p[i]))
 
 	plt.show()

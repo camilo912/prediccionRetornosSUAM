@@ -220,14 +220,18 @@ def bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 	if(i_model == 0):
 		# space
 		# big
-		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
-				'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
-				'batch_size': hp.quniform('batch_size', 5, 100, 1),
-				'n_hidden': hp.quniform('n_hidden', 5, 300, 1)}
+		# space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
+		# 		'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
+		# 		'batch_size': hp.quniform('batch_size', 5, 100, 1),
+		# 		'n_hidden': hp.quniform('n_hidden', 5, 300, 1)}
 		# space = {'n_lags': hp.quniform('n_lags', 20, 30, 1),
 		# 		'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
 		# 		'batch_size': hp.quniform('batch_size', 5, 100, 1),
 		# 		'n_hidden': hp.quniform('n_hidden', 155, 170, 1)}
+		space = {'n_lags': hp.quniform('n_lags', 40, 80, 1),
+				'n_epochs': hp.quniform('n_epochs', 2, 100, 1),
+				'batch_size': hp.quniform('batch_size', 15, 70, 1),
+				'n_hidden': hp.quniform('n_hidden', 200, 400, 1)}
 	elif(i_model == 1):
 		# space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
 		# 		'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
@@ -264,7 +268,7 @@ def bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 	writer = csv.writer(of_connection)
 	bayes_trials_results = sorted(bayes_trials.results, key = lambda x: x['loss'])
 	if(i_model == 0):
-		writer.writerow([bayes_trials_results[0]['loss'], bayes_trials_results[0]['params']['n_lags'], bayes_trials_results[0]['params']['n_hidden'], bayes_trials_results[0]['params']['n_epochs'], bayes_trials_results[0]['params']['batch_size'], MAX_EVALS])
+		writer.writerow([bayes_trials_results[0]['loss'], bayes_trials_results[0]['params']['batch_size'], bayes_trials_results[0]['params']['n_epochs'], bayes_trials_results[0]['params']['n_hidden'], bayes_trials_results[0]['params']['n_lags'], MAX_EVALS])
 	elif(i_model == 1):
 		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], best['n_estimators'], best['max_features'], best['min_samples'], MAX_EVALS])
 	elif(i_model == 2):

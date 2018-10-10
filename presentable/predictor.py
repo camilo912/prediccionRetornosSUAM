@@ -319,7 +319,8 @@ def predictor(data, id_model, tune, select, original):
 	else:
 		if(i_model == 0):			
 			if(original and not select):
-				batch_size, lr, n_epochs, n_hidden, n_lags = 52, 0.4799370248396754, 33, 159, 28
+				# batch_size, n_epochs, n_hidden, n_lags = 52, 33, 159, 28
+				batch_size, n_epochs, n_hidden, n_lags = 20, 17, 274, 46
 			else:
 				batch_size, n_epochs, n_hidden, n_lags = 15, 91, 24, 2
 

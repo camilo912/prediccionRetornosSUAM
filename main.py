@@ -62,7 +62,7 @@ def main():
 		#plt.plot(pred, color='r')
 		#plt.plot(actual, color='b')
 		#plt.show()
-	plt.plot(p, color='r')
+	plt.plot(p, color='r', marker='*', linestyle='-.')
 	plt.plot(o, color='b')
 	# datos = dataframe.values[400:411+10]
 	# plt.plot(datos[:, 0])

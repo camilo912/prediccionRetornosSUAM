@@ -95,7 +95,7 @@ def model_lstm(train_X, test_X, train_y, test_y, val_X, val_y, n_series, n_epoch
 	# for test
 	rmses = []
 	rmse = 0
-	weigth = 1.0
+	weigth = 1.5
 	step = 0.1
 	for i in range(n_out):
 		rmses.append(math.sqrt(mean_squared_error(y[:, i], y_hat[:, i])))
