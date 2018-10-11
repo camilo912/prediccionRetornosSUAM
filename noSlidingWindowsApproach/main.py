@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import time
 
 from keras import backend as K
 from keras.models import Sequential
@@ -39,8 +40,8 @@ df = pd.read_csv('data/forecast-competition-complete.csv', header=0, index_col=0
 # Parameters
 lr = 0.001
 lr_decay = 0.0
-n_epochs = 100
-batch_size = 80
+n_epochs = 1000
+n_hidden = 200
 
 data, scaler = normalize_data(df.values)
 
@@ -48,16 +49,18 @@ X_train, X_val, X_test, y_train, y_val, y_test = split_data(data)
 
 model = Sequential()
 
-model.add(LSTM(X_train.shape[1], input_shape=( None, X_train.shape[1]), return_sequences=True))
+model.add(LSTM(n_hidden, input_shape=(None, X_train.shape[1]), return_sequences=True))
 model.add(LSTM(X_train.shape[1], return_sequences=True))
 
 opt = Adam(lr=lr, decay=lr_decay)
 model.compile(loss=weighted_mse, optimizer=opt)
 
-model.fit(np.expand_dims(X_train, axis=0), np.expand_dims(y_train, axis=0), epochs=n_epochs, batch_size=batch_size, verbose=0, shuffle=False)
+init = time.time()
+model.fit(np.expand_dims(X_train, axis=0), np.expand_dims(y_train, axis=0), epochs=n_epochs, verbose=1, shuffle=False)
+print('training time: ', time.time()-init)
 
 new_model = Sequential()
-new_model.add(LSTM(X_train.shape[1], batch_input_shape=(1, None, X_train.shape[1]), return_sequences=True, stateful=True))
+new_model.add(LSTM(n_hidden, batch_input_shape=(1, None, X_train.shape[1]), return_sequences=True, stateful=True))
 new_model.add(LSTM(X_train.shape[1], return_sequences=False, stateful=True))
 
 # Transfer learning
