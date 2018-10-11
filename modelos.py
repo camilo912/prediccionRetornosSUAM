@@ -68,7 +68,7 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 	return inv_yhat
 
 ############################# LSTM ####################################
-def model_lstm(train_X, test_X, train_y, test_y, val_X, val_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values):
+def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values):
 	from keras.layers import Dense, Activation, Dropout, LSTM
 	from keras.models import Sequential
 	from keras.optimizers import Adam
@@ -85,22 +85,11 @@ def model_lstm(train_X, test_X, train_y, test_y, val_X, val_y, n_series, n_epoch
 	model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=0, shuffle=False)
 
 	
-	y = test_y
-	y_hat = model.predict(test_X)
 	y_hat_val = model.predict(val_X)
+	y_hat_test = model.predict(test_X)
 
 	# predict last
 	last = model.predict(np.expand_dims(last_values, axis=0))
-
-	# for test
-	rmses = []
-	rmse = 0
-	weigth = 1.5
-	step = 0.1
-	for i in range(n_out):
-		rmses.append(math.sqrt(mean_squared_error(y[:, i], y_hat[:, i])))
-		rmse += rmses[-1]*weigth
-		weigth -= step
 
 	# for validation
 	rmses_val = []
@@ -110,6 +99,16 @@ def model_lstm(train_X, test_X, train_y, test_y, val_X, val_y, n_series, n_epoch
 	for i in range(n_out):
 		rmses_val.append(math.sqrt(mean_squared_error(val_y[:, i], y_hat_val[:, i])))
 		rmse_val += rmses_val[-1]*weigth
+		weigth -= step
+
+	# for test
+	rmses = []
+	rmse = 0
+	weigth = 1.5
+	step = 0.1
+	for i in range(n_out):
+		rmses.append(math.sqrt(mean_squared_error(test_y[:, i], y_hat_test[:, i])))
+		rmse += rmses[-1]*weigth
 		weigth -= step
 
 	# rmse = math.sqrt(mean_squared_error(y.reshape((len(y), -1)), y_hat.reshape((len(y), -1))))
@@ -122,7 +121,7 @@ def model_lstm(train_X, test_X, train_y, test_y, val_X, val_y, n_series, n_epoch
 	tmp[:, 0] = last
 	last = scaler.inverse_transform(tmp)[:, 0]
 
-	return rmse_val, val_y, y_hat_val, last
+	return rmse, test_y, y_hat_test, last
 	# return rmse, y, y_hat, last
 	# return rmse, test_y, pred, last
 

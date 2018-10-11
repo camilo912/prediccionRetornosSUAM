@@ -15,7 +15,7 @@ def split_data(data, separator):
 
 def main():
 	model = 0 # id of model to use
-	parameters = 1 # Set to True for performing bayes optimization looking for best parameters
+	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 1 # set to True for training with original data (not feature selected)
 	#file_name = 'forecast-competition-training.csv'
@@ -42,7 +42,7 @@ def main():
 
 	o, p = [], []
 
-	for i in range(400, 401, 1): # 500 max for 10 time steps prediction maximun 490
+	for i in range(400, 431, 5): # 500 max for 10 time steps prediction maximun 490
 		print(i)
 		train, test = split_data(dataframe.values, i)
 
@@ -62,8 +62,8 @@ def main():
 		#plt.plot(pred, color='r')
 		#plt.plot(actual, color='b')
 		#plt.show()
-	plt.plot(p, color='r', marker='*', linestyle='-.')
-	plt.plot(o, color='b')
+	plt.plot(p, color='r')
+	plt.plot(o, color='b', marker='*', linestyle='-.')
 	# datos = dataframe.values[400:411+10]
 	# plt.plot(datos[:, 0])
 	# for i in range(10):
