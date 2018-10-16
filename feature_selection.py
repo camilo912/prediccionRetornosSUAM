@@ -56,16 +56,28 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 	df = dataFrame[inside]
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
-def select_features_ga(dataFrame):
-	n_generations = 1200
+def select_features_ga(dataFrame, max_vars):
+	import predictor
+	import random
+	import time
+	from matplotlib import pyplot as plt
+	from sklearn.metrics import mean_squared_error
+	#from sklearn.ensemble import RandomForestRegressor
+	#from sklearn.tree import DecisionTreeRegressor
+	#from sklearn.linear_model import LinearRegression
+	from sklearn.svm import SVR
+
+	n_generations = 250
 	n_chars = dataFrame.shape[1]
 	n_villagers = max(1, int(n_chars / 2))
 	villagers = np.random.randint(2, size=(n_villagers, n_chars))
 	villagers = np.array([[bool(villagers[i,j]) for i in range(villagers.shape[0])] for j in range(villagers.shape[1])]).T
 	n_best_parents = int(n_villagers / 2)
+	historic_losses = []
 
 	columns = np.array(dataFrame.columns)
 	for generation in range(n_generations):
+		# start_time = time.time()
 		print('generation: %d' % (generation + 1))
 		losses = []
 		for villager in villagers:
@@ -77,33 +89,32 @@ def select_features_ga(dataFrame):
 
 		
 
-			import predictor
-			#from sklearn.tree import DecisionTreeRegressor
 			#model = DecisionTreeRegressor()
-			from sklearn.linear_model import LinearRegression
-			model = LinearRegression(n_jobs=-1)
-			#from sklearn.svm import SVR
-			#model = SVR()
+			#model = LinearRegression(n_jobs=-1)
+			#model = RandomForestRegressor(n_estimators=100, n_jobs=-1)
+			model = SVR(gamma='scale')
+			#model = SVR(kernel='linear')
 
 			scaled, scaler = predictor.normalize_data(df.values)
 			values, n_lags, n_series = scaled, 4, 1
 			train_X, test_X, train_y, test_y, last_values = predictor.transform_values(values, n_lags, n_series, 0)
-			model.fit(train_X, train_y)
+			model.fit(train_X, train_y.ravel())
 			pred = model.predict(test_X)
 
-			from sklearn.metrics import mean_squared_error
 			loss = mean_squared_error(pred, test_y)
 			losses.append(loss)
 
 		losses = np.array(losses)
+		historic_losses.append(np.min(losses))
 		# print(losses)
 		# print('best loss: %f' % np.min(losses))
+		
 		# Select best parents
 		parents = []
 		for n in range(n_best_parents):
 			idx = np.where(losses == np.min(losses))[0][0]
 			parents.append(villagers[idx])
-			losses[idx] = np.NINF
+			losses[idx] = np.Inf
 
 		# Cross over
 		cross_over = []
@@ -120,14 +131,31 @@ def select_features_ga(dataFrame):
 				if(np.random.rand() < 1.0/n_chars):
 					cross_over[i][j] = not(cross_over[i][j])
 
+		# Max vars trim
+		for i in range(len(cross_over)):
+			suma = np.sum(cross_over[i])
+			if(suma > max_vars):
+				# how many to drop
+				leftover = int(suma - max_vars)
+				# take the positives
+				positives = [i for i, x in enumerate(cross_over[i]) if x]
+				# select the ones to drop
+				random.shuffle(positives)
+				positives = positives[:leftover]
+				# drop those ones
+				cross_over[i][positives] = False
+
+
 		villagers[:n_best_parents] = parents
 		villagers[n_best_parents:] = cross_over
-
+		#print('epoch time: ', time.time()-start_time)
+	#plt.plot(historic_losses)
+	#plt.show()
 	cols = columns[villagers[np.where(losses == np.min(losses))[0][0]]]
 	df = dataFrame[cols]
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
-def select_features_sa(dataFrame):
+def select_features_sa(dataFrame, max_vars):
 	from simanneal import Annealer
 
 	class Sas(Annealer):

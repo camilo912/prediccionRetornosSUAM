@@ -40,8 +40,8 @@ df = pd.read_csv('data/forecast-competition-complete.csv', header=0, index_col=0
 # Parameters
 lr = 0.001
 lr_decay = 0.0
-n_epochs = 1000
-n_hidden = 200
+n_epochs = 300
+n_hidden = 150
 
 data, scaler = normalize_data(df.values)
 
@@ -56,7 +56,7 @@ opt = Adam(lr=lr, decay=lr_decay)
 model.compile(loss=weighted_mse, optimizer=opt)
 
 init = time.time()
-model.fit(np.expand_dims(X_train, axis=0), np.expand_dims(y_train, axis=0), epochs=n_epochs, verbose=1, shuffle=False)
+model.fit(np.expand_dims(X_train, axis=0), np.expand_dims(y_train, axis=0), epochs=n_epochs, verbose=0, shuffle=False)
 print('training time: ', time.time()-init)
 
 new_model = Sequential()

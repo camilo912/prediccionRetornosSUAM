@@ -81,7 +81,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 	model.add(Dense(n_out, input_shape=(n_hidden,)))
 
 	opt = Adam(lr=0.001, decay=0.0)
-	model.compile(loss='mse', optimizer=opt)
+	model.compile(loss=weighted_mse, optimizer=opt)
 	model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=0, shuffle=False)
 
 	
@@ -125,12 +125,17 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 	# return rmse, y, y_hat, last
 	# return rmse, test_y, pred, last
 
+def weighted_mse(yTrue,yPred):
+	from keras import backend as K
+	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (10,)
+	idx = K.cumsum(ones) # similar to a 'range(1,11)'
 
+	return K.mean((1/idx)*K.square(yTrue-yPred))
 
 ###################### random forest ##########################
 def model_random_forest(train_X, test_X, train_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values):
 	from sklearn.ensemble import RandomForestRegressor
-	model = RandomForestRegressor(n_estimators=n_estimators, max_features=max_features, min_samples_leaf=min_samples, n_jobs=4)
+	model = RandomForestRegressor(n_estimators=n_estimators, max_features=max_features, min_samples_leaf=min_samples, n_jobs=-1)
 	model.fit(train_X, train_y.ravel())
 
 	y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)

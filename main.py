@@ -17,13 +17,16 @@ def main():
 	model = 0 # id of model to use
 	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
-	original = 1 # set to True for training with original data (not feature selected)
+	original = 0 # set to True for training with original data (not feature selected)
+	time_steps = 10
+	max_vars = 25
 	#file_name = 'forecast-competition-training.csv'
-	file_name = 'data/forecast-competition-complete.csv'
+	input_file_name = 'data/forecast-competition-complete.csv'
 	header, index_col = 0, 0
-	dataframe = load_data(file_name, header, index_col)
+	dataframe = load_data(input_file_name, header, index_col)
 	df = pd.DataFrame()
-	f = open('results/salida_10_periodos.csv', 'w')
+	output_file_name = 'results/salida_' + str(time_steps) + '_periodos.csv'
+	f = open(output_file_name, 'w')
 	writer = csv.writer(f)
 
 	# chose the feature to predict
@@ -41,12 +44,17 @@ def main():
 	rango = maxi - mini
 
 	o, p = [], []
-
-	for i in range(400, 431, 5): # 500 max for 10 time steps prediction maximun 490
+	ini = 400
+	fin = 451
+	step = 10
+	for i in range(ini, fin, step): # 500 max for 10 time steps prediction maximun 490
+		if(select and i > ini):
+			select = 0
+			original = 0
 		print(i)
 		train, test = split_data(dataframe.values, i)
 
-		pred = predictor.predictor(train, model, parameters, select, original)#[0]
+		pred = predictor.predictor(train, model, parameters, select, original, time_steps, max_vars)#[0]
 
 		actual = test[0:len(pred), 0]
 		#print(pred.shape)
@@ -56,19 +64,21 @@ def main():
 		df = df.append(pd.Series([pred]), ignore_index=True)
 		writer.writerow([pred])
 		#o.append(actual)
-		#p.append(pred)
-		o.extend(actual)
-		p.extend(pred)
+		p.append(pred)
+		#o.extend(actual)
+		#p.extend(pred)
 		#plt.plot(pred, color='r')
 		#plt.plot(actual, color='b')
 		#plt.show()
-	plt.plot(p, color='r')
-	plt.plot(o, color='b', marker='*', linestyle='-.')
-	# datos = dataframe.values[400:411+10]
-	# plt.plot(datos[:, 0])
-	# for i in range(10):
-	# 	pad = [None for j in range(i)]
-	# 	plt.plot(pad + list(p[i]))
+	# plt.plot(p, color='r')
+	# plt.plot(o, color='b', marker='*', linestyle='-.')
+	datos = dataframe.values[ini:fin+20]
+	plt.plot(datos[:, 0], marker='*', linestyle='-.')
+	for i in range(int(np.floor((fin - ini)/step))):
+		pad = [None for j in range(i*step)]
+		plt.plot(pad + list(p[i]))
+
+	plt.show()
 
 	plt.show()
 

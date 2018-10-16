@@ -90,9 +90,10 @@ def transform_values(data, n_lags, n_series, dim):
 		last_values = np.append(test_X[-1,1:n_lags,:], [test[-1,-n_features:]], axis=0)
 		# last_values = np.insert(test_X[-10:,1:n_lags,:], n_lags-1, test[-10:,-n_features:], axis=1)
 	else:
-		print('falta implementar validacion para esta parte')
-		raise Exception('falta implementar validacion para no dim en transform values')
-		# last_values = np.append(test_X[-1, n_features:].reshape(1,-1), [test[-1,-n_features:]], axis=1)
+		# print('falta implementar validacion para esta no dim en transform values')
+		# raise Exception('falta implementar validacion para no dim en transform values')
+		last_values = np.append(test_X[-1, n_features:].reshape(1,-1), [test[-1,-n_features:]], axis=1)
+		return train_X, test_X, train_y, test_y, last_values
 	return train_X, val_X, test_X, train_y, val_y, test_y, last_values
 
 # def train_model(train_X, test_X, train_y, test_y, n_series, n_a, n_epochs, batch_size, i_model):
@@ -274,16 +275,16 @@ def bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 	return best, bayes_trials_results
 
 
-def predictor(data, id_model, tune, select, original):
+def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 	global values, scaler, n_features, MAX_EVALS, n_series, i_model
 	
 	if(select):
 		# feature selection
 		import feature_selection
-		# feature_selection.select_features_sa(pd.DataFrame(data))
-		feature_selection.select_features_ga(pd.DataFrame(data))
+		# feature_selection.select_features_sa(pd.DataFrame(data), max_vars)
+		feature_selection.select_features_ga(pd.DataFrame(data), max_vars)
 		# df = pd.read_csv('data/forecast-competition-complete.csv', index_col=0, header=0)
-		# feature_selection.select_features_stepwise_forward(df, 5)
+		# feature_selection.select_features_stepwise_forward(df, max_vars)
 	if(not original or select):
 		df = pd.read_csv('data/forecast-competition-complete_selected.csv', index_col=0)
 		# df = pd.read_csv('data/forecast-competition-complete_selected_manually.csv', index_col=0)
@@ -292,7 +293,7 @@ def predictor(data, id_model, tune, select, original):
 
 	values, scaler = normalize_data(data)
 	MAX_EVALS = 200
-	n_series = 10
+	n_series = time_steps
 
 	n_features = values.shape[1]
 	i_model = id_model
@@ -312,7 +313,7 @@ def predictor(data, id_model, tune, select, original):
 
 			# print(y_hat[-1][0])
 			return last
-		elif(i_model == 1):
+		elif(i_model == 1 and n_series == 1):
 			best, results = bayes_optimization(i_model)
 			n_lags, n_estimators, max_features, min_samples = int(best['n_lags']), int(best['n_estimators']), int(best['max_features']), int(best['min_samples'])
 
@@ -323,7 +324,7 @@ def predictor(data, id_model, tune, select, original):
 			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
-		elif(i_model == 2):
+		elif(i_model == 2 and n_series == 1):
 			best, results = bayes_optimization(i_model)
 			n_lags, n_estimators, lr = int(best['n_lags']), int(best['n_estimators']), best['lr']
 
@@ -334,7 +335,7 @@ def predictor(data, id_model, tune, select, original):
 			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
-		elif(i_model == 3):
+		elif(i_model == 3 and n_series == 1):
 			best, results = bayes_optimization(i_model)
 			n_lags = int(best['n_lags'])
 
@@ -368,7 +369,7 @@ def predictor(data, id_model, tune, select, original):
 			#plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat[:, :, 0].squeeze()], ['y', 'y_hat'], 'Test plot')
 			# plot_data_lagged([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
 			# plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
-			plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Validation plot')
+			# plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Validation plot')
 
 			# # print test predictions vs observations
 			# mini = 0
@@ -385,7 +386,7 @@ def predictor(data, id_model, tune, select, original):
 			# 	plt.show()
 
 			return last
-		elif(i_model == 1):
+		elif(i_model == 1 and n_series == 1):
 			# n_lags, n_estimators, max_features, min_samples = 4, 500, 14, 1
 			n_lags, n_estimators, max_features, min_samples = 4, 762, 18, 3 # for selected features
 
@@ -396,7 +397,7 @@ def predictor(data, id_model, tune, select, original):
 			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
-		elif(i_model == 2):
+		elif(i_model == 2 and n_series == 1):
 			n_lags, n_estimators, lr = 4, 808, 0.33209425848535884
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
@@ -406,7 +407,7 @@ def predictor(data, id_model, tune, select, original):
 			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
-		elif(i_model == 3):
+		elif(i_model == 3 and n_series == 1):
 			n_lags = 4
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
@@ -416,7 +417,7 @@ def predictor(data, id_model, tune, select, original):
 			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
-		elif(i_model == 4):
+		elif(i_model == 4 and n_series == 1):
 			n_lags, d, q = 5, 2, 1
 			wall = int(len(values)*0.8)
 			train, test, last_values = values[:wall, 0], values[wall:-1,0], values[-1,0]
@@ -426,6 +427,8 @@ def predictor(data, id_model, tune, select, original):
 			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
+		else:
+			raise Exception('parameters combination is not in the valid options.')
 
 
 
