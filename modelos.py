@@ -68,6 +68,13 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 	return inv_yhat
 
 ############################# LSTM ####################################
+def weighted_mse(yTrue,yPred):
+	from keras import backend as K
+	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (10,)
+	idx = K.cumsum(ones) # similar to a 'range(1,11)'
+
+	return K.mean((1/idx)*K.square(yTrue-yPred))
+
 def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values):
 	from keras.layers import Dense, Activation, Dropout, LSTM
 	from keras.models import Sequential
@@ -125,12 +132,90 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 	# return rmse, y, y_hat, last
 	# return rmse, test_y, pred, last
 
-def weighted_mse(yTrue,yPred):
-	from keras import backend as K
-	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (10,)
-	idx = K.cumsum(ones) # similar to a 'range(1,11)'
+############################ LSTM no slidding windows ################################
+def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, n_hidden, lr, n_features, n_lags, scaler, last_values):
+	from keras.layers import LSTM
+	from keras.models import Sequential
+	from keras.optimizers import Adam
+	import time
 
-	return K.mean((1/idx)*K.square(yTrue-yPred))
+	drop_p = 0.05
+	n_out = n_series
+	lr_decay = 0.0
+
+	model = Sequential()
+
+	model.add(LSTM(n_hidden, input_shape=(None, train_X.shape[1]), return_sequences=True))
+	model.add(LSTM(train_X.shape[1], return_sequences=True))
+
+	opt = Adam(lr=lr, decay=lr_decay)
+	model.compile(loss=weighted_mse, optimizer=opt)
+
+	init = time.time()
+	model.fit(np.expand_dims(train_X, axis=0), np.expand_dims(train_y, axis=0), epochs=n_epochs, verbose=0, shuffle=False)
+	print('training time: ', time.time()-init)
+
+	new_model = Sequential()
+	new_model.add(LSTM(n_hidden, batch_input_shape=(1, None, train_X.shape[1]), return_sequences=True, stateful=True))
+	new_model.add(LSTM(train_X.shape[1], return_sequences=False, stateful=True))
+
+	# Transfer learning
+	new_model.set_weights(model.get_weights())
+
+	# # Validation
+	# preds_val = []
+	# obs_val = []
+	# for i in range(0, len(val_y), 10):
+	# 	pred1 = new_model.predict(np.expand_dims(np.append(train_X, val_X[:i], axis=0), axis=0))
+	# 	pred2 = new_model.predict(np.expand_dims(pred1, axis=0))
+	# 	pred3 = new_model.predict(np.expand_dims(pred2, axis=0))
+	# 	pred4 = new_model.predict(np.expand_dims(pred3, axis=0))
+	# 	pred5 = new_model.predict(np.expand_dims(pred4, axis=0))
+	# 	pred6 = new_model.predict(np.expand_dims(pred5, axis=0))
+	# 	pred7 = new_model.predict(np.expand_dims(pred6, axis=0))
+	# 	pred8 = new_model.predict(np.expand_dims(pred7, axis=0))
+	# 	pred9 = new_model.predict(np.expand_dims(pred8, axis=0))
+	# 	pred10 = new_model.predict(np.expand_dims(pred9, axis=0))
+
+	# 	preds_val.append([pred1[0][0], pred2[0][0], pred3[0][0], pred4[0][0], pred5[0][0], pred6[0][0], pred7[0][0], pred8[0][0], pred9[0][0], pred10[0][0]])
+	# 	obs_val.extend(val_y[i:i+10])
+
+	# Testing
+	preds_test = []
+	obs_test = []
+	for i in range(0, len(test_y), 10):
+		pred1 = new_model.predict(np.expand_dims(np.append(np.append(train_X, val_X, axis=0), test_X[:i], axis=0), axis=0))
+		pred2 = new_model.predict(np.expand_dims(pred1, axis=0))
+		pred3 = new_model.predict(np.expand_dims(pred2, axis=0))
+		pred4 = new_model.predict(np.expand_dims(pred3, axis=0))
+		pred5 = new_model.predict(np.expand_dims(pred4, axis=0))
+		pred6 = new_model.predict(np.expand_dims(pred5, axis=0))
+		pred7 = new_model.predict(np.expand_dims(pred6, axis=0))
+		pred8 = new_model.predict(np.expand_dims(pred7, axis=0))
+		pred9 = new_model.predict(np.expand_dims(pred8, axis=0))
+		pred10 = new_model.predict(np.expand_dims(pred9, axis=0))
+
+		if(len(test_y) - i >= n_series):
+			preds_test.append([pred1[0][0], pred2[0][0], pred3[0][0], pred4[0][0], pred5[0][0], pred6[0][0], pred7[0][0], pred8[0][0], pred9[0][0], pred10[0][0]])
+			obs_test.append(test_y[i:i+10, 0])
+
+	preds_test = np.array(preds_test)
+	obs_test = np.array(obs_test)
+
+	# for test
+	rmses = []
+	rmse = 0
+	weigth = 1.5
+	step = 0.1
+	for i in range(n_out):
+		rmses.append(math.sqrt(mean_squared_error(obs_test[:, i], preds_test[:, i])))
+		rmse += rmses[-1]*weigth
+		weigth -= step
+
+	last = [new_model.predict(np.expand_dims(np.expand_dims(last_values, axis=0), axis=0))]
+	for i in range(n_series - 1):
+		last.append(new_model.predict(np.expand_dims(last[-1], axis=0)))
+	return rmse, obs_test, preds_test, np.array(last)[:, :, 0].ravel()
 
 ###################### random forest ##########################
 def model_random_forest(train_X, test_X, train_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values):

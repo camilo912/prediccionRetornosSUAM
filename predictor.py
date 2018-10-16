@@ -50,6 +50,20 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 		agg.dropna(inplace=True)
 	return agg
 
+# For no slidding window approach
+def split_data(data):
+	n_train = int(len(data)*0.6)
+	n_val = int(len(data)*0.2)
+	ys = data[1:, 0]
+
+	X_train, y_train = data[:n_train, :], data[1:n_train+1]
+	X_val, y_val = data[n_train:n_train+n_val, :], data[n_train+1:n_train+n_val+1]
+	X_test, y_test = data[n_train+n_val:-1, :], data[n_train+n_val+1:]
+
+	last_values = data[-1]
+
+	return X_train, X_val, X_test, y_train, y_val, y_test, last_values
+
 def transform_values(data, n_lags, n_series, dim):
 	train_size = 0.6
 	val_size =0.2
@@ -108,6 +122,8 @@ def train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params
 		return modelos.model_svm(train_X, test_X, train_y, test_y, n_series, n_features, n_lags, scaler, last_values)
 	elif(i_model == 4):
 		return modelos.model_arima(train_X, test_X, train_y, test_y, n_series, params['d'], params['q'], n_features, n_lags, scaler, last_values)
+	elif(i_model == 5):
+		return modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['n_hidden'], params['lr'], n_features, n_lags, scaler, last_values)
 
 def plot_data(data, labels, title):
 	plt.figure()
@@ -360,6 +376,7 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 				# batch_size, n_epochs, n_hidden, n_lags = 45, 19, 50, 32
 
 			# print(batch_size, n_epochs, n_hidden, n_lags)
+			# train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(data)
 			train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
 			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
 			#plot_data([history.history['loss'], history.history['val_loss']], ['loss', 'val_loss'], 'Loss plot')
@@ -426,6 +443,11 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			print('rmse: %s ' % rmse)
 			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
+			return last
+		elif(i_model == 5):
+			lr, n_epochs, n_hidden = 0.001, 300, 159
+			train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(data)
+			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'n_hidden':n_hidden, 'lr':lr}, i_model, n_features, -1, scaler, last_values)
 			return last
 		else:
 			raise Exception('parameters combination is not in the valid options.')
