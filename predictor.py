@@ -266,7 +266,7 @@ def bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 	bayes_trials = Trials()
 
 	# File to save first results
-	out_file = 'gbm_trials.csv'
+	out_file = 'trials/gbm_trials.csv'
 	of_connection = open(out_file, 'w')
 	writer = csv.writer(of_connection)
 
@@ -278,7 +278,7 @@ def bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 	best = fmin(fn = lambda x: objective(x, values, scaler, n_series, i_model), space = space, algo = tpe.suggest, max_evals = MAX_EVALS, trials = bayes_trials, rstate = np.random.RandomState(np.random.randint(100)))
 
 	# store best results
-	of_connection = open('bests.txt', 'a')
+	of_connection = open('trials/bests.txt', 'a')
 	writer = csv.writer(of_connection)
 	bayes_trials_results = sorted(bayes_trials.results, key = lambda x: x['loss'])
 	if(i_model == 0):
@@ -431,7 +431,7 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			return last.squeeze()
 		elif(i_model == 5):
 			if(original and not select):
-				lr, n_epochs = 0.04518614795721551, 84
+				lr, n_epochs = 0.014540077212290003, 37# 0.04518614795721551, 84
 			else:
 				lr, n_epochs = 0.2050774898644015, 22
 			train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(data)

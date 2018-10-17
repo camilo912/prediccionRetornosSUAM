@@ -21,7 +21,7 @@ def main():
 
 	# Parameters
 	model = 5 # id of model to use
-	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
+	parameters = 1 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 1 # set to True for training with original data (not feature selected)
 	time_steps = 10 # number of periods in the future to predict
