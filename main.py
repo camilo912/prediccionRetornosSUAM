@@ -45,7 +45,7 @@ def main():
 
 	o, p = [], []
 	ini = 400
-	fin = 451
+	fin = 421
 	step = 10
 	for i in range(ini, fin, step): # 500 max for 10 time steps prediction maximun 490
 		if(select and i > ini):
@@ -74,7 +74,8 @@ def main():
 	# plt.plot(o, color='b', marker='*', linestyle='-.')
 	datos = dataframe.values[ini:fin+20]
 	plt.plot(datos[:, 0], marker='*', linestyle='-.')
-	for i in range(int(np.floor((fin - ini)/step))):
+	# for i in range(int(np.floor((fin - ini)/step))):
+	for i in range(len(p)):
 		pad = [None for j in range(i*step)]
 		plt.plot(pad + list(p[i]))
 

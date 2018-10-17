@@ -5,6 +5,7 @@ import csv
 
 import main
 import modelos
+import gc
 
 from matplotlib import pyplot as plt
 
@@ -123,7 +124,7 @@ def train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params
 	elif(i_model == 4):
 		return modelos.model_arima(train_X, test_X, train_y, test_y, n_series, params['d'], params['q'], n_features, n_lags, scaler, last_values)
 	elif(i_model == 5):
-		return modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['n_hidden'], params['lr'], n_features, n_lags, scaler, last_values)
+		return modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, n_lags, scaler, last_values)
 
 def plot_data(data, labels, title):
 	plt.figure()
@@ -211,6 +212,15 @@ def objective(params, values, scaler, n_series, i_model):
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
+	elif(i_model == 5):
+		for parameter_name in ['n_epochs']:
+			params[parameter_name] = int(params[parameter_name])
+		start = timer()
+		train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(values)
+		rmse, _, _, _ = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':params['n_epochs'], 'lr':params['lr']}, i_model, n_features, -1, scaler, last_values)
+		run_time = timer() - start
+		print('rmse: ', rmse)
+		print('time: ', run_time, end='\n\n')
 
 	# Write to the csv file ('a' means append)
 	of_connection = open(out_file, 'a')
@@ -258,6 +268,9 @@ def bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 				'lr': hp.uniform('lr', 0.00001, 1.0)}
 	elif(i_model == 3):
 		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1)}
+	elif(i_model == 5):
+		space = {'lr': hp.uniform('lr', 0.00001, 0.15),
+				'n_epochs': hp.quniform('n_epochs', 5, 500, 1)}
 
 	# Keep track of results
 	bayes_trials = Trials()
@@ -286,6 +299,8 @@ def bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], best['n_estimators'], best['lr'], MAX_EVALS])
 	elif(i_model == 3):
 		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], MAX_EVALS])
+	elif(i_model == 5):
+		writer.writerow([bayes_trials_results[0]['loss'], best['lr'], best['n_epochs'], MAX_EVALS])
 	of_connection.close()
 
 	return best, bayes_trials_results
@@ -330,7 +345,7 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			# print(y_hat[-1][0])
 			return last
 		elif(i_model == 1 and n_series == 1):
-			best, results = bayes_optimization(i_model)
+			best, results = bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 			n_lags, n_estimators, max_features, min_samples = int(best['n_lags']), int(best['n_estimators']), int(best['max_features']), int(best['min_samples'])
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
@@ -341,7 +356,7 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 
 			return last
 		elif(i_model == 2 and n_series == 1):
-			best, results = bayes_optimization(i_model)
+			best, results = bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 			n_lags, n_estimators, lr = int(best['n_lags']), int(best['n_estimators']), best['lr']
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
@@ -352,7 +367,7 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 
 			return last
 		elif(i_model == 3 and n_series == 1):
-			best, results = bayes_optimization(i_model)
+			best, results = bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 			n_lags = int(best['n_lags'])
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
@@ -362,7 +377,15 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
+		elif(i_model == 4 and n_series == 1):
+			raise Exception('parameters optimization not implemented for arima model')
 
+		elif(i_model == 5):
+			best, results = bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
+			lr, n_epochs = best['lr'], int(best['n_epochs'])
+			train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(data)
+			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'lr':lr}, i_model, n_features, -1, scaler, last_values)
+			return last
 	else:
 		if(i_model == 0):			
 			if(original and not select):
@@ -445,9 +468,14 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 
 			return last
 		elif(i_model == 5):
-			lr, n_epochs, n_hidden = 0.001, 300, 159
+			if(original and not select):
+				lr, n_epochs = 0.04518614795721551, 84# 0.02050774898644015, 120
+			else:
+				lr, n_epochs = 0.2050774898644015, 22
 			train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(data)
-			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'n_hidden':n_hidden, 'lr':lr}, i_model, n_features, -1, scaler, last_values)
+			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'lr':lr}, i_model, n_features, -1, scaler, last_values)
+			# plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Validation plot')
+			print('rmse: ', rmse)
 			return last
 		else:
 			raise Exception('parameters combination is not in the valid options.')
