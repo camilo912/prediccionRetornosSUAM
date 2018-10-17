@@ -83,7 +83,6 @@ def transform_values(data, n_lags, n_series, dim):
 	n_obs = n_lags * n_features
 
 	# for only testing y, y only contains target variable in different times
-	# cols = [('var%d(t-%d)' % (j+1, i)) for j in range(n_features) for i in range(n_lags, 0, -1)]
 	cols = ['var1(t)']
 	cols += ['var1(t+%d)' % (i) for i in range(1, n_series)]
 	y_o = reframed[cols].values
@@ -94,8 +93,6 @@ def transform_values(data, n_lags, n_series, dim):
 	train_X, train_y = train[:, :n_obs], train_o[:, -n_series:]
 	val_X, val_y = val[:, :n_obs], val_o[:, -n_series:]
 	test_X, test_y = test[:, :n_obs], test_o[:, -n_series:]
-	#train_X, train_y = train[:, :n_obs], train[:, n_obs:n_obs+n_features]
-	#test_X, test_y = test[:, :n_obs], test[:, n_obs:n_obs+n_features]
 
 	# reshape train data to be 3D [n_examples, n_lags, features]
 	if(dim):
@@ -103,26 +100,22 @@ def transform_values(data, n_lags, n_series, dim):
 		val_X = val_X.reshape((val_X.shape[0], n_lags, n_features))
 		test_X = test_X.reshape((test_X.shape[0], n_lags, n_features))
 		last_values = np.append(test_X[-1,1:n_lags,:], [test[-1,-n_features:]], axis=0)
-		# last_values = np.insert(test_X[-10:,1:n_lags,:], n_lags-1, test[-10:,-n_features:], axis=1)
 	else:
-		# print('falta implementar validacion para esta no dim en transform values')
-		# raise Exception('falta implementar validacion para no dim en transform values')
 		last_values = np.append(test_X[-1, n_features:].reshape(1,-1), [test[-1,-n_features:]], axis=1)
-		return train_X, test_X, train_y, test_y, last_values
+		# return train_X, test_X, train_y, test_y, last_values
 	return train_X, val_X, test_X, train_y, val_y, test_y, last_values
 
-# def train_model(train_X, test_X, train_y, test_y, n_series, n_a, n_epochs, batch_size, i_model):
 def train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params, i_model, n_features, n_lags, scaler, last_values):
 	if(i_model == 0):
 		return modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, n_lags, scaler, last_values)
 	elif(i_model == 1):
-		return modelos.model_random_forest(train_X, test_X, train_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], n_features, n_lags, scaler, last_values)
+		return modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], n_features, n_lags, scaler, last_values)
 	elif(i_model == 2):
-		return modelos.model_ada_boost(train_X, test_X, train_y, test_y, n_series, params['n_estimators'], params['lr'], n_features, n_lags, scaler, last_values)
+		return modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], n_features, n_lags, scaler, last_values)
 	elif(i_model == 3):
-		return modelos.model_svm(train_X, test_X, train_y, test_y, n_series, n_features, n_lags, scaler, last_values)
+		return modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values)
 	elif(i_model == 4):
-		return modelos.model_arima(train_X, test_X, train_y, test_y, n_series, params['d'], params['q'], n_features, n_lags, scaler, last_values)
+		return modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['d'], params['q'], n_features, n_lags, scaler, last_values)
 	elif(i_model == 5):
 		return modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, n_lags, scaler, last_values)
 
@@ -168,9 +161,6 @@ def objective(params, values, scaler, n_series, i_model):
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags', 'n_epochs', 'batch_size', 'n_hidden']:
 			params[parameter_name] = int(params[parameter_name])
-
-		#for parameter_name in ['lr']:
-		#	params[parameter_name] = float(params[parameter_name])
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
@@ -320,7 +310,6 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 		df = pd.read_csv('data/forecast-competition-complete_selected.csv', index_col=0)
 		# df = pd.read_csv('data/forecast-competition-complete_selected_manually.csv', index_col=0)
 		data = df.values
-	# values = data
 
 	values, scaler = normalize_data(data)
 	MAX_EVALS = 200
@@ -337,12 +326,9 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			
 			train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
 			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
-			#plot_data([history.history['loss'], history.history['val_loss']], ['loss', 'val_loss'], 'Loss plot')
 
 			print('rmse: %s ' % rmse)
-			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-			# print(y_hat[-1][0])
 			return last
 		elif(i_model == 1 and n_series == 1):
 			best, results = bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
@@ -352,9 +338,8 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_estimators':n_estimators, 'max_features':max_features, 'min_samples':min_samples}, i_model, n_features, n_lags, scaler, last_values)
 
 			print('rmse: %s ' % rmse)
-			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-			return last
+			return last.squeeze()
 		elif(i_model == 2 and n_series == 1):
 			best, results = bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 			n_lags, n_estimators, lr = int(best['n_lags']), int(best['n_estimators']), best['lr']
@@ -363,7 +348,6 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_estimators':n_estimators, 'lr':lr}, i_model, n_features, n_lags, scaler, last_values)
 
 			print('rmse: %s ' % rmse)
-			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
 		elif(i_model == 3 and n_series == 1):
@@ -374,7 +358,6 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {}, i_model, n_features, n_lags, scaler, last_values)
 
 			print('rmse: %s ' % rmse)
-			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
 		elif(i_model == 4 and n_series == 1):
@@ -389,91 +372,72 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 	else:
 		if(i_model == 0):			
 			if(original and not select):
-				# batch_size, lr, n_epochs, n_hidden, n_lags = 35, 0.001, 58, 163, 3
-				# approach for max 8 lags
-				# batch_size, lr, n_epochs, n_hidden, n_lags = 50, 0.4799370248396754, 106, 25, 3
-				# approach for max 50 lags
 				batch_size, lr, n_epochs, n_hidden, n_lags = 52, 0.4799370248396754, 33, 159, 28
 			else:
 				batch_size, n_epochs, n_hidden, n_lags = 15, 91, 24, 2
-				# batch_size, n_epochs, n_hidden, n_lags = 45, 19, 50, 32
 
-			# print(batch_size, n_epochs, n_hidden, n_lags)
-			# train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(data)
 			train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, n_lags, n_series, 1)
+			start = timer()
 			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
-			#plot_data([history.history['loss'], history.history['val_loss']], ['loss', 'val_loss'], 'Loss plot')
+			print('time elapsed: ', timer() - start)
+			
 			print('rmse: %s ' % rmse)
-			# plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
-			#plot_data_lagged([test_y[:, 0].ravel(), y_hat[:, :, 0].squeeze()], ['y', 'y_hat'], 'Test plot')
-			#plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat[:, :, 0].squeeze()], ['y', 'y_hat'], 'Test plot')
-			# plot_data_lagged([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
-			# plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
 			# plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Validation plot')
-
-			# # print test predictions vs observations
-			# mini = 0
-			# maxi = 64
-			# step = 8
-			# n_rows = 2
-			# n_cols = step/n_rows
-			# for i in range(mini, maxi, step):
-			# 	# plot_data([y[i, :, 0], y_hat[i, :, 0]], ['y', 'y_hat'], 'Test plot')
-			# 	for j in range(step):
-			# 		plt.subplot(n_rows,n_cols,j+1)
-			# 		plt.plot(y[i+j, :, 0])
-			# 		plt.plot(y_hat[i+j, :, 0])
-			# 	plt.show()
 
 			return last
 		elif(i_model == 1 and n_series == 1):
-			# n_lags, n_estimators, max_features, min_samples = 4, 500, 14, 1
 			n_lags, n_estimators, max_features, min_samples = 4, 762, 18, 3 # for selected features
 
-			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
-			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_estimators':n_estimators, 'max_features':max_features, 'min_samples':min_samples}, i_model, n_features, n_lags, scaler, last_values)
+			train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
+			start = timer()
+			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_estimators':n_estimators, 'max_features':max_features, 'min_samples':min_samples}, i_model, n_features, n_lags, scaler, last_values)
+			print('time elapsed: ', timer() - start)
 
 			print('rmse: %s ' % rmse)
-			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-			return last
+			return last.squeeze()
 		elif(i_model == 2 and n_series == 1):
 			n_lags, n_estimators, lr = 4, 808, 0.33209425848535884
 
-			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
-			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_estimators':n_estimators, 'lr':lr}, i_model, n_features, n_lags, scaler, last_values)
+			train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
+			start = timer()
+			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_estimators':n_estimators, 'lr':lr}, i_model, n_features, n_lags, scaler, last_values)
+			print('time elapsed: ', timer() - start)
 
 			print('rmse: %s ' % rmse)
-			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-			return last
+			return last.squeeze()
 		elif(i_model == 3 and n_series == 1):
 			n_lags = 4
 
-			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
-			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {}, i_model, n_features, n_lags, scaler, last_values)
+			train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
+			start = timer()
+			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {}, i_model, n_features, n_lags, scaler, last_values)
+			print('time elapsed: ', timer() - start)
 
 			print('rmse: %s ' % rmse)
-			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-			return last
+			return last.squeeze()
 		elif(i_model == 4 and n_series == 1):
 			n_lags, d, q = 5, 2, 1
 			wall = int(len(values)*0.8)
 			train, test, last_values = values[:wall, 0], values[wall:-1,0], values[-1,0]
-			rmse, y, y_hat, last = train_model(train, [], [], test, n_series, {'d':d, 'q':q}, i_model, n_features, n_lags, scaler, last_values)
+			start = timer()
+			rmse, y, y_hat, last = train_model(train, [], [], [], [], test, n_series, {'d':d, 'q':q}, i_model, n_features, n_lags, scaler, last_values)
+			print('time elapsed: ', timer() - start)
 
 			print('rmse: %s ' % rmse)
-			#plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-			return last
+			return last.squeeze()
 		elif(i_model == 5):
 			if(original and not select):
-				lr, n_epochs = 0.04518614795721551, 84# 0.02050774898644015, 120
+				lr, n_epochs = 0.04518614795721551, 84
 			else:
 				lr, n_epochs = 0.2050774898644015, 22
 			train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(data)
+			start = timer()
 			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'lr':lr}, i_model, n_features, -1, scaler, last_values)
+			print('time elapsed: ', timer() - start)
 			# plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Validation plot')
 			print('rmse: ', rmse)
 			return last

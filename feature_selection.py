@@ -22,16 +22,15 @@ def series_to_supervised(series):
 
 def select_features_stepwise_forward(dataFrame, n_news=25):
 	n_features = dataFrame.shape[1]
-	# Stepwise forward selection
-	# params
 
+	# params
 	n_news -= 1
 	features = set(dataFrame.columns)
 	features.remove(list(dataFrame.columns)[0])
 	missing = features.copy()
 	inside = [list(dataFrame.columns)[0]]
 	from sklearn.ensemble import RandomForestRegressor
-	# from sklearn.tree import DecisionTreeRegressor
+
 	while(n_news):
 		fts = list(inside)
 		best = ''
@@ -41,7 +40,6 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 			scaled, scaler = normalize_data(dataFrame[fts].values)
 			x, y = series_to_supervised(scaled)
 			model = RandomForestRegressor()
-			#model = DecisionTreeRegressor()
 			model.fit(x, y)
 			importances = model.feature_importances_
 			if(importances[-1] > best_importance):
@@ -63,7 +61,6 @@ def select_features_ga(dataFrame, max_vars):
 	from matplotlib import pyplot as plt
 	from sklearn.metrics import mean_squared_error
 	#from sklearn.ensemble import RandomForestRegressor
-	#from sklearn.tree import DecisionTreeRegressor
 	#from sklearn.linear_model import LinearRegression
 	from sklearn.svm import SVR
 
@@ -87,9 +84,6 @@ def select_features_ga(dataFrame, max_vars):
 			cols = columns[villager]
 			df = dataFrame[cols]
 
-		
-
-			#model = DecisionTreeRegressor()
 			#model = LinearRegression(n_jobs=-1)
 			#model = RandomForestRegressor(n_estimators=100, n_jobs=-1)
 			model = SVR(gamma='scale')
@@ -106,8 +100,6 @@ def select_features_ga(dataFrame, max_vars):
 
 		losses = np.array(losses)
 		historic_losses.append(np.min(losses))
-		# print(losses)
-		# print('best loss: %f' % np.min(losses))
 		
 		# Select best parents
 		parents = []
@@ -148,9 +140,7 @@ def select_features_ga(dataFrame, max_vars):
 
 		villagers[:n_best_parents] = parents
 		villagers[n_best_parents:] = cross_over
-		#print('epoch time: ', time.time()-start_time)
-	#plt.plot(historic_losses)
-	#plt.show()
+
 	cols = columns[villagers[np.where(losses == np.min(losses))[0][0]]]
 	df = dataFrame[cols]
 	df.to_csv('data/forecast-competition-complete_selected.csv')
@@ -177,6 +167,7 @@ def select_features_sa(dataFrame, max_vars):
 			model = SVR(kernel='poly', degree=1)
 			#from sklearn.ensemble import AdaBoostRegressor
 			#model = AdaBoostRegressor()
+			
 			cols = list(self.df.columns[self.state])
 			df = self.df[cols]
 			data = df.values

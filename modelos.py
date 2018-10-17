@@ -1,9 +1,4 @@
 from sklearn.metrics import mean_squared_error
-#import torch
-#import torch.nn as nn
-#import torch.optim as optim
-#import torch.nn.functional as F
-#from torch.utils.data import Dataset, DataLoader
 from matplotlib import pyplot as plt
 
 import numpy as np
@@ -117,19 +112,12 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		rmse += rmses[-1]*weigth
 		weigth -= step
 
-	# rmse = math.sqrt(mean_squared_error(y.reshape((len(y), -1)), y_hat.reshape((len(y), -1))))
-	# rmse = np.sum([math.sqrt(mean_squared_error(y[i], y_hat[i])) for i in range(len(y))])
-	# rmse = math.sqrt(mean_squared_error(y, y_hat))
-	# rmse = math.sqrt(mean_squared_error(test_y, pred))
-
 	# transform last values
 	tmp = np.zeros((last.shape[1], n_features))
 	tmp[:, 0] = last
 	last = scaler.inverse_transform(tmp)[:, 0]
 
 	return rmse, test_y, y_hat_test, last
-	# return rmse, y, y_hat, last
-	# return rmse, test_y, pred, last
 
 ############################ LSTM no slidding windows ################################
 def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, lr, n_features, n_lags, scaler, last_values):
@@ -149,49 +137,35 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 	opt = Adam(lr=lr, decay=lr_decay)
 	model.compile(loss=weighted_mse, optimizer=opt)
 
-	init = time.time()
 	for epoch in range(n_epochs):
-		#print(epoch)
 		model.fit(np.expand_dims(train_X, axis=0), np.expand_dims(train_y, axis=0), validation_data=(np.expand_dims(val_X, axis=0), np.expand_dims(val_y, axis=0)),epochs=1, verbose=0, shuffle=False, batch_size=1)
 		model.reset_states()
-	print('training time: ', time.time() - init)
+	
 	# # Validation
 	# preds_val = []
 	# obs_val = []
 	# for i in range(0, len(val_y)):
-	# 	pred1 = model.predict(np.expand_dims(np.append(train_X, val_X[:i], axis=0), axis=0))
-	# 	pred2 = model.predict(np.expand_dims(pred1, axis=0))
-	# 	pred3 = model.predict(np.expand_dims(pred2, axis=0))
-	# 	pred4 = model.predict(np.expand_dims(pred3, axis=0))
-	# 	pred5 = model.predict(np.expand_dims(pred4, axis=0))
-	# 	pred6 = model.predict(np.expand_dims(pred5, axis=0))
-	# 	pred7 = model.predict(np.expand_dims(pred6, axis=0))
-	# 	pred8 = model.predict(np.expand_dims(pred7, axis=0))
-	# 	pred9 = model.predict(np.expand_dims(pred8, axis=0))
-	# 	pred10 = model.predict(np.expand_dims(pred9, axis=0))
+	# 	model.reset_states()
+	# 	preds = model.predict(np.expand_dims(np.append(train_X, val_X[:i], axis=0), axis=0))[-1, -1].reshape(-1, n_features)
+	# 	for j in range(n_out - 1):
+	# 		preds = np.append(preds, model.predict(preds[-1].reshape(1, 1, n_features))[-1, -1].reshape(-1, n_features), axis=0)
 
-	# 	preds_val.append([pred1[0][0], pred2[0][0], pred3[0][0], pred4[0][0], pred5[0][0], pred6[0][0], pred7[0][0], pred8[0][0], pred9[0][0], pred10[0][0]])
-	# 	obs_val.extend(val_y[i:i+10])
+	# 	if(len(val_y) - i >= n_series):
+	# 		preds_val.append(preds[:, 0])
+	# 		obs_val.append(val_y[i:i+n_out, 0])
 
 	# Testing
 	preds_test = []
 	obs_test = []
 	for i in range(0, len(test_y)):
 		model.reset_states()
-		pred1 = model.predict(np.expand_dims(np.append(np.append(train_X, val_X, axis=0), test_X[:i+1], axis=0), axis=0))[-1, -1].reshape(-1, n_features)
-		pred2 = model.predict(np.expand_dims(pred1, axis=0))[-1, -1].reshape(-1, n_features)
-		pred3 = model.predict(np.expand_dims(pred2, axis=0))[-1, -1].reshape(-1, n_features)
-		pred4 = model.predict(np.expand_dims(pred3, axis=0))[-1, -1].reshape(-1, n_features)
-		pred5 = model.predict(np.expand_dims(pred4, axis=0))[-1, -1].reshape(-1, n_features)
-		pred6 = model.predict(np.expand_dims(pred5, axis=0))[-1, -1].reshape(-1, n_features)
-		pred7 = model.predict(np.expand_dims(pred6, axis=0))[-1, -1].reshape(-1, n_features)
-		pred8 = model.predict(np.expand_dims(pred7, axis=0))[-1, -1].reshape(-1, n_features)
-		pred9 = model.predict(np.expand_dims(pred8, axis=0))[-1, -1].reshape(-1, n_features)
-		pred10 = model.predict(np.expand_dims(pred9, axis=0))[-1, -1].reshape(-1, n_features)
+		preds = model.predict(np.expand_dims(np.append(np.append(train_X, val_X, axis=0), test_X[:i+1], axis=0), axis=0))[-1, -1].reshape(-1, n_features)
+		for j in range(n_out - 1):
+			preds = np.append(preds, model.predict(preds[-1].reshape(1, 1, n_features))[-1, -1].reshape(-1, n_features), axis=0)
 
 		if(len(test_y) - i >= n_series):
-			preds_test.append([pred1[-1][0], pred2[-1][0], pred3[-1][0], pred4[-1][0], pred5[-1][0], pred6[-1][0], pred7[-1][0], pred8[-1][0], pred9[-1][0], pred10[-1][0]])
-			obs_test.append(test_y[i:i+10, 0])
+			preds_test.append(preds[:, 0])
+			obs_test.append(test_y[i:i+n_out, 0])
 
 	preds_test = np.array(preds_test)
 	obs_test = np.array(obs_test)
@@ -224,7 +198,7 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 	return rmse, obs_test, preds_test, last.ravel()
 
 ###################### random forest ##########################
-def model_random_forest(train_X, test_X, train_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values):
+def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values):
 	from sklearn.ensemble import RandomForestRegressor
 	model = RandomForestRegressor(n_estimators=n_estimators, max_features=max_features, min_samples_leaf=min_samples, n_jobs=-1)
 	model.fit(train_X, train_y.ravel())
@@ -236,7 +210,7 @@ def model_random_forest(train_X, test_X, train_y, test_y, n_series, n_estimators
 	return rmse, y, y_hat, last
 
 ####################### ada boost ###############################
-def model_ada_boost(train_X, test_X, train_y, test_y, n_series, n_estimators, lr, n_features, n_lags, scaler, last_values):
+def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, lr, n_features, n_lags, scaler, last_values):
 	from sklearn.ensemble import AdaBoostRegressor
 	model = AdaBoostRegressor(n_estimators=n_estimators, learning_rate=lr)
 	model.fit(train_X, train_y.ravel())
@@ -248,9 +222,9 @@ def model_ada_boost(train_X, test_X, train_y, test_y, n_series, n_estimators, lr
 	return rmse, y, y_hat, last
 
 ####################################### SVM ##############################
-def model_svm(train_X, test_X, train_y, test_y, n_series, n_features, n_lags, scaler, last_values):
+def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values):
 	from sklearn.svm import SVR
-	model = SVR(kernel='poly', degree=1)
+	model = SVR(kernel='poly', degree=1, gamma='scale')
 	model.fit(train_X, train_y.ravel())
 
 	y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
@@ -260,9 +234,9 @@ def model_svm(train_X, test_X, train_y, test_y, n_series, n_features, n_lags, sc
 	return rmse, y, y_hat, last
 
 ###################################### ARIMA #########################################
-def model_arima(train_X, test_X, train_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values):
-	#from statsmodels.tsa.arima_model import ARIMA
+def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values):
 	from statsmodels.tsa.statespace.sarimax import SARIMAX
+	from statsmodels.tools.sm_exceptions import ConvergenceWarning
 	import warnings
 	test_size = len(test_y)
 	test_y = np.append(test_y, last_values)
@@ -275,15 +249,13 @@ def model_arima(train_X, test_X, train_y, test_y, n_series, d, q, n_features, n_
 			output = model_fit.forecast()[0]
 			y_hat.append(output)
 			train_X = np.append(train_X, test_y[i])
-	#print(test_y)
-	#print(y_hat)
+
 	rmse = math.sqrt(mean_squared_error(test_y, y_hat))
 	model = SARIMAX(train_X, order=(n_lags, d, q))
 	model_fit = model.fit(disp=0)
 	last = model_fit.forecast()[0]
 	last = last.reshape(-1, 1)
 	Xs = np.ones((last.shape[0], n_lags * n_features))
-	# inv_yhat = np.concatenate((yhat, Xs[:, -(n_features - n_series):]), axis=1)
 	inv_yhat = np.concatenate((last, Xs[:, -(n_features - n_series):]), axis=1)
 	inv_yhat = scaler.inverse_transform(inv_yhat)
 
