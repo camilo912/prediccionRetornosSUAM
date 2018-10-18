@@ -21,7 +21,7 @@ def main():
 
 	# Parameters
 	model = 5 # id of model to use
-	parameters = 1 # Set to True for performing bayes optimization looking for best parameters
+	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 1 # set to True for training with original data (not feature selected)
 	time_steps = 10 # number of periods in the future to predict
@@ -49,7 +49,7 @@ def main():
 
 	o, p = [], []
 	ini = 400
-	fin = 500 # 500 max for 10 time steps prediction maximun 490
+	fin = 500
 	step = time_steps
 	assert fin <= 500
 	for i in range(ini, fin, step): 

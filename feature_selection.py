@@ -71,11 +71,12 @@ def select_features_ga(dataFrame, max_vars):
 	villagers = np.array([[bool(villagers[i,j]) for i in range(villagers.shape[0])] for j in range(villagers.shape[1])]).T
 	n_best_parents = int(n_villagers / 2)
 	historic_losses = []
+	print_gen = int(n_generations / 10)
 
 	columns = np.array(dataFrame.columns)
 	for generation in range(n_generations):
 		# start_time = time.time()
-		print('generation: %d' % (generation + 1))
+		if(generation % print_gen == 0): print('generation: %d' % (generation + 1))
 		losses = []
 		for villager in villagers:
 			# asure that target variable is in the solution
@@ -91,11 +92,11 @@ def select_features_ga(dataFrame, max_vars):
 
 			scaled, scaler = predictor.normalize_data(df.values)
 			values, n_lags, n_series = scaled, 4, 1
-			train_X, test_X, train_y, test_y, last_values = predictor.transform_values(values, n_lags, n_series, 0)
+			train_X, val_X, test_X, train_y, val_y, test_y, last_values = predictor.transform_values(values, n_lags, n_series, 0)
 			model.fit(train_X, train_y.ravel())
-			pred = model.predict(test_X)
+			pred = model.predict(val_X)
 
-			loss = mean_squared_error(pred, test_y)
+			loss = mean_squared_error(pred, val_y)
 			losses.append(loss)
 
 		losses = np.array(losses)
