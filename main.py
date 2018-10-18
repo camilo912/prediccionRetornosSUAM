@@ -20,12 +20,12 @@ def main():
 	# 5 -> LSTM without slidding windows
 
 	# Parameters
-	model = 5 # id of model to use
-	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
+	model = 0 # id of model to use
+	parameters = 1 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
-	original = 1 # set to True for training with original data (not feature selected)
+	original = 0 # set to True for training with original data (not feature selected)
 	time_steps = 10 # number of periods in the future to predict
-	max_vars = 25 # maximum number of variables for taking in count for variable selection
+	max_vars = 50 # maximum number of variables for taking in count for variable selection
 	plots_level = 0 # level of log plots
 
 	input_file_name = 'data/forecast-competition-complete.csv'
@@ -49,7 +49,7 @@ def main():
 
 	o, p = [], []
 	ini = 400
-	fin = 500
+	fin = 450
 	step = time_steps
 	assert fin <= 500
 	for i in range(ini, fin, step): 
@@ -59,7 +59,7 @@ def main():
 		print(i)
 		train, test = split_data(dataframe.values, i)
 
-		pred = predictor.predictor(train, model, parameters, select, original, time_steps, max_vars)
+		pred = predictor.predictor(train, cols, model, parameters, select, original, time_steps, max_vars, plots_level)
 
 		actual = test[0:time_steps, 0]
 
@@ -76,6 +76,7 @@ def main():
 	else:
 		plt.plot(p, label='predictions')
 		plt.legend()
+	plt.suptitle('Predictions vs Observations', fontsize=16)
 	plt.show()
 
 	df.columns=[out]

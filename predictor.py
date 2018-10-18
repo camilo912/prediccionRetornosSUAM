@@ -3,7 +3,6 @@ import pandas as pd
 import math
 import csv
 
-import main
 import modelos
 import gc
 
@@ -154,7 +153,7 @@ def objective(params, values, scaler, n_series, i_model):
 	global ITERATION
 	
 	ITERATION += 1
-	out_file = 'gbm_trials.csv'
+	out_file = 'trials/gbm_trials.csv'
 	print(ITERATION, params)
 
 	if(i_model == 0):
@@ -231,18 +230,18 @@ def bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 	if(i_model == 0):
 		# space
 		# big
-		# space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
-		# 		'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
-		# 		'batch_size': hp.quniform('batch_size', 5, 100, 1),
-		# 		'n_hidden': hp.quniform('n_hidden', 5, 300, 1)}
+		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
+				'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
+				'batch_size': hp.quniform('batch_size', 5, 100, 1),
+				'n_hidden': hp.quniform('n_hidden', 5, 300, 1)}
 		# space = {'n_lags': hp.quniform('n_lags', 20, 30, 1),
 		# 		'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
 		# 		'batch_size': hp.quniform('batch_size', 5, 100, 1),
 		# 		'n_hidden': hp.quniform('n_hidden', 155, 170, 1)}
-		space = {'n_lags': hp.quniform('n_lags', 40, 80, 1),
-				'n_epochs': hp.quniform('n_epochs', 2, 100, 1),
-				'batch_size': hp.quniform('batch_size', 15, 70, 1),
-				'n_hidden': hp.quniform('n_hidden', 200, 400, 1)}
+		# space = {'n_lags': hp.quniform('n_lags', 40, 80, 1),
+		# 		'n_epochs': hp.quniform('n_epochs', 2, 100, 1),
+		# 		'batch_size': hp.quniform('batch_size', 15, 70, 1),
+		# 		'n_hidden': hp.quniform('n_hidden', 200, 400, 1)}
 	elif(i_model == 1):
 		# space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
 		# 		'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
@@ -296,14 +295,13 @@ def bayes_optimization(i_model, MAX_EVALS, values, scaler, n_features, n_series)
 	return best, bayes_trials_results
 
 
-def predictor(data, id_model, tune, select, original, time_steps, max_vars):
+def predictor(data, original_cols, id_model, tune, select, original, time_steps, max_vars, plots_level):
 	global values, scaler, n_features, MAX_EVALS, n_series, i_model
-	
 	if(select):
 		# feature selection
 		import feature_selection
 		# feature_selection.select_features_sa(pd.DataFrame(data), max_vars)
-		feature_selection.select_features_ga(pd.DataFrame(data), max_vars)
+		feature_selection.select_features_ga(pd.DataFrame(data), max_vars, original_cols)
 		# df = pd.read_csv('data/forecast-competition-complete.csv', index_col=0, header=0)
 		# feature_selection.select_features_stepwise_forward(df, max_vars)
 	if(not original or select):
@@ -328,6 +326,9 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'batch_size':batch_size, 'n_hidden':n_hidden}, i_model, n_features, n_lags, scaler, last_values)
 
 			print('rmse: %s ' % rmse)
+			
+			if(plots_level > 0):
+				plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
 		elif(i_model == 1 and n_series == 1):
@@ -336,8 +337,11 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_estimators':n_estimators, 'max_features':max_features, 'min_samples':min_samples}, i_model, n_features, n_lags, scaler, last_values)
-
+			
 			print('rmse: %s ' % rmse)
+
+			if(plots_level > 0):
+				plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last.squeeze()
 		elif(i_model == 2 and n_series == 1):
@@ -346,8 +350,11 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {'n_estimators':n_estimators, 'lr':lr}, i_model, n_features, n_lags, scaler, last_values)
-
+			
 			print('rmse: %s ' % rmse)
+
+			if(plots_level > 0):
+				plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
 		elif(i_model == 3 and n_series == 1):
@@ -356,8 +363,11 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 
 			train_X, test_X, train_y, test_y, last_values = transform_values(values, n_lags, n_series, 0)
 			rmse, y, y_hat, last = train_model(train_X, test_X, train_y, test_y, n_series, {}, i_model, n_features, n_lags, scaler, last_values)
-
+			
 			print('rmse: %s ' % rmse)
+
+			if(plots_level > 0):
+				plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
 		elif(i_model == 4 and n_series == 1):
@@ -368,11 +378,17 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			lr, n_epochs = best['lr'], int(best['n_epochs'])
 			train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(data)
 			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'lr':lr}, i_model, n_features, -1, scaler, last_values)
+
+			print('rmse: %s ' % rmse)
+			
+			if(plots_level > 0):
+				plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
+
 			return last
 	else:
 		if(i_model == 0):			
 			if(original and not select):
-				batch_size, lr, n_epochs, n_hidden, n_lags = 52, 0.4799370248396754, 33, 159, 28
+				batch_size, lr, n_epochs, n_hidden, n_lags = 52, 0.4799370248396754, 33, 159, 28 
 			else:
 				batch_size, n_epochs, n_hidden, n_lags = 15, 91, 24, 2
 
@@ -382,7 +398,9 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			print('time elapsed: ', timer() - start)
 			
 			print('rmse: %s ' % rmse)
-			# plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Validation plot')
+
+			if(plots_level > 0):
+				plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last
 		elif(i_model == 1 and n_series == 1):
@@ -395,6 +413,9 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 
 			print('rmse: %s ' % rmse)
 
+			if(plots_level > 0):
+				plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
+
 			return last.squeeze()
 		elif(i_model == 2 and n_series == 1):
 			n_lags, n_estimators, lr = 4, 808, 0.33209425848535884
@@ -405,6 +426,9 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			print('time elapsed: ', timer() - start)
 
 			print('rmse: %s ' % rmse)
+
+			if(plots_level > 0):
+				plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
 			return last.squeeze()
 		elif(i_model == 3 and n_series == 1):
@@ -417,6 +441,9 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 
 			print('rmse: %s ' % rmse)
 
+			if(plots_level > 0):
+				plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
+
 			return last.squeeze()
 		elif(i_model == 4 and n_series == 1):
 			n_lags, d, q = 5, 2, 1
@@ -428,6 +455,9 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 
 			print('rmse: %s ' % rmse)
 
+			if(plots_level > 0):
+				plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
+
 			return last.squeeze()
 		elif(i_model == 5):
 			if(original and not select):
@@ -438,15 +468,13 @@ def predictor(data, id_model, tune, select, original, time_steps, max_vars):
 			start = timer()
 			rmse, y, y_hat, last = train_model(train_X, val_X, test_X, train_y, val_y, test_y, n_series, {'n_epochs':n_epochs, 'lr':lr}, i_model, n_features, -1, scaler, last_values)
 			print('time elapsed: ', timer() - start)
-			# plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Validation plot')
+			
 			print('rmse: ', rmse)
+
+			if(plots_level > 0):
+				plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Validation plot')
+
 			return last
 		else:
 			raise Exception('parameters combination is not in the valid options.')
 
-
-
-
-
-if __name__ == '__main__':
-	main.main()

@@ -54,7 +54,7 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 	df = dataFrame[inside]
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
-def select_features_ga(dataFrame, max_vars):
+def select_features_ga(dataFrame, max_vars, original_cols):
 	import predictor
 	import random
 	import time
@@ -63,7 +63,6 @@ def select_features_ga(dataFrame, max_vars):
 	#from sklearn.ensemble import RandomForestRegressor
 	#from sklearn.linear_model import LinearRegression
 	from sklearn.svm import SVR
-
 	n_generations = 250
 	n_chars = dataFrame.shape[1]
 	n_villagers = max(1, int(n_chars / 2))
@@ -76,7 +75,7 @@ def select_features_ga(dataFrame, max_vars):
 	columns = np.array(dataFrame.columns)
 	for generation in range(n_generations):
 		# start_time = time.time()
-		if(generation % print_gen == 0): print('generation: %d' % (generation + 1))
+		if((generation + 1) % print_gen == 0): print('generation: %d of %d' % (generation + 1, n_generations))
 		losses = []
 		for villager in villagers:
 			# asure that target variable is in the solution
@@ -100,14 +99,15 @@ def select_features_ga(dataFrame, max_vars):
 			losses.append(loss)
 
 		losses = np.array(losses)
+		temp_losses = losses.copy()
 		historic_losses.append(np.min(losses))
 		
 		# Select best parents
 		parents = []
 		for n in range(n_best_parents):
-			idx = np.where(losses == np.min(losses))[0][0]
+			idx = np.where(temp_losses == np.min(temp_losses))[0][0]
 			parents.append(villagers[idx])
-			losses[idx] = np.Inf
+			temp_losses[idx] = np.Inf
 
 		# Cross over
 		cross_over = []
@@ -144,9 +144,10 @@ def select_features_ga(dataFrame, max_vars):
 
 	cols = columns[villagers[np.where(losses == np.min(losses))[0][0]]]
 	df = dataFrame[cols]
+	df.columns = np.array(original_cols)[cols]
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
-def select_features_sa(dataFrame, max_vars):
+def select_features_sa(dataFrame, max_vars, original_cols):
 	from simanneal import Annealer
 
 	class Sas(Annealer):
@@ -196,6 +197,7 @@ def select_features_sa(dataFrame, max_vars):
 	cols = np.array(dataFrame.columns)
 	cols = cols[result]
 	df = dataFrame[cols]
+	df.columns = np.array(original_cols)[cols]
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
 
