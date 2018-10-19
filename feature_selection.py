@@ -166,7 +166,8 @@ def select_features_sa(dataFrame, max_vars, original_cols):
 			#from sklearn.ensemble import RandomForestRegressor
 			#model = RandomForestRegressor()
 			from sklearn.svm import SVR
-			model = SVR(kernel='poly', degree=1)
+			#model = SVR(kernel='poly', degree=1)
+			model = SVR(gamma='scale')
 			#from sklearn.ensemble import AdaBoostRegressor
 			#model = AdaBoostRegressor()
 			

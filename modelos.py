@@ -63,7 +63,7 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 	return inv_yhat
 
 ############################# LSTM ####################################
-def weighted_mse(yTrue,yPred):
+def weighted_mse(yTrue, yPred):
 	from keras import backend as K
 	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (10,)
 	idx = K.cumsum(ones) # similar to a 'range(1,11)'
