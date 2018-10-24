@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np 
-from sklearn.preprocessing import MinMaxScaler
 import csv
 import modelos
+
+from sklearn.preprocessing import MinMaxScaler
+
+from matplotlib import pyplot as plt
 
 from hyperopt import fmin
 from hyperopt import tpe
@@ -126,8 +129,28 @@ def plot_data_lagged_blocks(data, labels, title):
 	plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=2)
 	plt.show()
 
+def diff(values):
+	new = np.zeros(len(values)-1)
+	for i in range(len(new)):
+		new[i] = values[i+1] - values[i]
+	return new
+
+
+def calculate_diff_level_for_stationarity(values, scaler, maxi):
+	from statsmodels.tsa.stattools import adfuller
+
+	real_values = scaler.inverse_transform(values)
+	serie = real_values[:, 0]
+	for i in range(maxi):
+		result = adfuller(serie)
+		if(result[0] < result[4]['5%']):
+			return i
+		serie = diff(serie)
+	return maxi
+
+
 # for bayes optimization
-def objective(params, values, scaler, n_series, id_model, n_features):
+def objective(params, values, scaler, n_series, id_model, n_features, verbosity):
 	
 	# Keep track of evals
 	global ITERATION
@@ -145,7 +168,7 @@ def objective(params, values, scaler, n_series, id_model, n_features):
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
-		rmse, rmse_val, _, _, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error)
+		rmse, rmse_val, _, _, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
@@ -159,21 +182,21 @@ def objective(params, values, scaler, n_series, id_model, n_features):
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error)
+		rmse, rmse_val, _, _, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
 	elif(id_model == 2):
 		# Make sure parameters that need to be integers are integers
-		for parameter_name in ['n_lags', 'n_estimators']:
+		for parameter_name in ['n_lags', 'n_estimators', 'max_depth']:
 			params[parameter_name] = int(params[parameter_name])
 		calc_val_error = True
 		calc_test_error = True
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error)
+		rmse, rmse_val, _, _, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
@@ -187,7 +210,7 @@ def objective(params, values, scaler, n_series, id_model, n_features):
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error)
+		rmse, rmse_val, _, _, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
@@ -203,7 +226,7 @@ def objective(params, values, scaler, n_series, id_model, n_features):
 		wall = int(len(values)*0.6)
 		wall_val= int(len(values)*0.2)
 		train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
-		rmse, rmse_val, _, _, _ = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error)
+		rmse, rmse_val, _, _, _ = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
@@ -216,7 +239,7 @@ def objective(params, values, scaler, n_series, id_model, n_features):
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(values)
-		rmse, rmse_val, _, _, _ = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, last_values, calc_val_error, calc_test_error)
+		rmse, rmse_val, _, _, _ = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, last_values, calc_val_error, calc_test_error, verbosity)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
@@ -232,7 +255,7 @@ def objective(params, values, scaler, n_series, id_model, n_features):
 	return {'loss': rmse, 'params': params, 'iteration': ITERATION,
 			'train_time': run_time, 'status': STATUS_OK}
 
-def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original):
+def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity):
 	global ITERATION
 	ITERATION = 0
 
@@ -251,12 +274,14 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	elif(id_model == 2):
 		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
 				'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
-				'lr': hp.uniform('lr', 0.00001, 1.0)}
+				'lr': hp.uniform('lr', 0.00001, 1.0),
+				'max_depth': hp.quniform('max_depth', 2, 10, 1)}
 	elif(id_model == 3):
 		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1)}
 	elif(id_model == 4):
+		diff_level = calculate_diff_level_for_stationarity(values, scaler, 5)
 		space={'n_lags': hp.quniform('n_lags', 1, 12, 1),
-				'd': hp.quniform('d', 0, 2, 1),
+				'd': hp.quniform('d', diff_level, diff_level, 1),
 				'q': hp.quniform('q', 1, 12, 1)}
 	elif(id_model == 5):
 		space = {'lr': hp.uniform('lr', 0.00001, 0.15),
@@ -276,7 +301,7 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	of_connection.close()
 
 	# Run optimization
-	best = fmin(fn = lambda x: objective(x, values, scaler, n_series, id_model, n_features), space = space, algo = tpe.suggest, max_evals = MAX_EVALS, trials = bayes_trials, rstate = np.random.RandomState(np.random.randint(100)))
+	best = fmin(fn = lambda x: objective(x, values, scaler, n_series, id_model, n_features, verbosity), space = space, algo = tpe.suggest, max_evals = MAX_EVALS, trials = bayes_trials, rstate = np.random.RandomState(np.random.randint(100)))
 
 	# store best results
 	of_connection = open('trials/bests.txt', 'a')
@@ -287,7 +312,7 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	elif(id_model == 1):
 		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], best['n_estimators'], best['max_features'], best['min_samples'], MAX_EVALS])
 	elif(id_model == 2):
-		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], best['n_estimators'], best['lr'], MAX_EVALS])
+		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], best['n_estimators'], best['lr'], best['max_depth'], MAX_EVALS])
 	elif(id_model == 3):
 		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], MAX_EVALS])
 	elif(id_model == 5):

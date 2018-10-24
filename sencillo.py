@@ -17,9 +17,7 @@ plots_level = 1 # level of log plots
 parameters_file_name = 'parameters/default_lstm_10timesteps.txt'
 
 cols = list(df.columns)
-########### hacer argumento para parametros  con nombre de archivo y uno por default ******************** CHECKED
 ######## hacer argumento para archivo de varaibles seleccioandas igual que apra el de leer parametros *** hecho con el archivo de inico
-########### hacer optimizacion bayesiana con el error de validacion y no el de testing ************ CHECKED
 pred = [predictor.predictor(df.values[:i, :], cols, model, parameters, select, original, time_steps, max_vars, plots_level, parameters_file_name) for i in range(400, 460, time_steps)]
 
 plt.plot(df.values[400:, 0], label='observations')

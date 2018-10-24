@@ -20,14 +20,15 @@ def main():
 	# 5 -> LSTM without slidding windows
 
 	# Parameters
-	model = 5 # id of model to use
+	model = 4 # id of model to use
 	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 1 # set to True for training with original data (not feature selected)
 	time_steps = 1 # number of periods in the future to predict
 	max_vars = 50 # maximum number of variables for taking in count for variable selection
-	plots_level = 0 # level of log plots
+	verbosity = 2 # level of log plots
 	parameters_file_name = None#'parameters/default_lstm_%dtimesteps.pars' % time_steps
+	MAX_EVALS = 100
 
 	input_file_name = 'data/forecast-competition-complete.csv'
 	dataframe = pd.read_csv(input_file_name, header=0, index_col=0)
@@ -69,7 +70,7 @@ def main():
 		print(i)
 		train, test = split_data(dataframe.values, i)
 
-		pred = predictor.predict(train, cols, parameters, select, time_steps, max_vars, plots_level, parameters_file_name)
+		pred = predictor.predict(train, cols, parameters, select, time_steps, max_vars, verbosity, parameters_file_name, MAX_EVALS)
 
 		actual = test[0:time_steps, 0]
 
