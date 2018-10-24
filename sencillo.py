@@ -14,12 +14,13 @@ time_steps = 10 # number of periods in the future to predict
 max_vars = 50 # maximum number of variables for taking in count for variable selection
 plots_level = 1 # level of log plots
 ########## niveles de plot tambien para testing
+parameters_file_name = 'parameters/default_lstm_10timesteps.txt'
 
 cols = list(df.columns)
-########### hacer argumento para parametros  con nombre de archivo y uno pro default ********************
-######## hacer argumento para archivo de varaibles seleccioandas igual que apra el de leer parametros
-########### hacer optimizacion bayesiana con el error de validacion y no el de testing
-pred = [predictor.predictor(df.values[:i, :], cols, model, parameters, select, original, time_steps, max_vars, plots_level) for i in range(400, 460, time_steps)]
+########### hacer argumento para parametros  con nombre de archivo y uno por default ******************** CHECKED
+######## hacer argumento para archivo de varaibles seleccioandas igual que apra el de leer parametros *** hecho con el archivo de inico
+########### hacer optimizacion bayesiana con el error de validacion y no el de testing ************ CHECKED
+pred = [predictor.predictor(df.values[:i, :], cols, model, parameters, select, original, time_steps, max_vars, plots_level, parameters_file_name) for i in range(400, 460, time_steps)]
 
 plt.plot(df.values[400:, 0], label='observations')
 if(time_steps == 1):

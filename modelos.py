@@ -70,7 +70,7 @@ def weighted_mse(yTrue, yPred):
 
 	return K.mean((1/idx)*K.square(yTrue-yPred))
 
-def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values):
+def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error):
 	from keras.layers import Dense, Activation, Dropout, LSTM
 	from keras.models import Sequential
 	from keras.optimizers import Adam
@@ -91,36 +91,41 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 
 	# predict last
 	last = model.predict(np.expand_dims(last_values, axis=0))
+	if(calc_val_error):
+		# for validation
+		rmses_val = []
+		rmse_val = 0
+		weigth = 1.0
+		step = 0.1
+		for i in range(n_out):
+			rmses_val.append(math.sqrt(mean_squared_error(val_y[:, i], y_hat_val[:, i])))
+			rmse_val += rmses_val[-1]*weigth
+			weigth -= step
+	else:
+		rmse_val = None
 
-	# for validation
-	rmses_val = []
-	rmse_val = 0
-	weigth = 1.0
-	step = 0.1
-	for i in range(n_out):
-		rmses_val.append(math.sqrt(mean_squared_error(val_y[:, i], y_hat_val[:, i])))
-		rmse_val += rmses_val[-1]*weigth
-		weigth -= step
-
-	# for test
-	rmses = []
-	rmse = 0
-	weigth = 1.5
-	step = 0.1
-	for i in range(n_out):
-		rmses.append(math.sqrt(mean_squared_error(test_y[:, i], y_hat_test[:, i])))
-		rmse += rmses[-1]*weigth
-		weigth -= step
+	if(calc_test_error):
+		# for test
+		rmses = []
+		rmse = 0
+		weigth = 1.5
+		step = 0.1
+		for i in range(n_out):
+			rmses.append(math.sqrt(mean_squared_error(test_y[:, i], y_hat_test[:, i])))
+			rmse += rmses[-1]*weigth
+			weigth -= step
+	else:
+		rmse = None
 
 	# transform last values
 	tmp = np.zeros((last.shape[1], n_features))
 	tmp[:, 0] = last
 	last = scaler.inverse_transform(tmp)[:, 0]
 
-	return rmse, test_y, y_hat_test, last
+	return rmse, rmse_val, test_y, y_hat_test, last
 
 ############################ LSTM no slidding windows ################################
-def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, lr, n_features, n_lags, scaler, last_values):
+def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, lr, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error):
 	from keras.layers import LSTM, Input
 	from keras.models import Sequential, Model
 	from keras.optimizers import Adam
@@ -149,23 +154,44 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 
 	model.set_weights(train_model.get_weights())
 
-	# Validation
-	preds_val = []
-	obs_val = []
-	layer = model.get_layer(name='my_lstm')
-	model.reset_states()
-	_, sh, sc = model.predict(np.expand_dims(train_X, axis=0))
-	for i in range(0, len(val_y)):
+	if(calc_val_error):
+		# Validation
+		preds_val = []
+		obs_val = []
+		layer = model.get_layer(name='my_lstm')
 		model.reset_states()
-		layer.reset_states(states=(sh, sc))
-		preds, sh, sc = model.predict(val_X[i].reshape(1, 1, n_features))
-		preds = preds[-1][-1].reshape(-1, n_features)
-		for j in range(n_out - 1):
-			preds = np.append(preds, model.predict(preds[-1].reshape(1, 1, n_features))[0][-1][-1].reshape(-1, n_features), axis=0)
+		_, sh, sc = model.predict(np.expand_dims(train_X, axis=0))
+		for i in range(0, len(val_y)):
+			model.reset_states()
+			layer.reset_states(states=(sh, sc))
+			preds, sh, sc = model.predict(val_X[i].reshape(1, 1, n_features))
+			preds = preds[-1][-1].reshape(-1, n_features)
+			for j in range(n_out - 1):
+				preds = np.append(preds, model.predict(preds[-1].reshape(1, 1, n_features))[0][-1][-1].reshape(-1, n_features), axis=0)
 
-		if(len(val_y) - i >= n_out):
-			preds_val.append(preds[:, 0])
-			obs_val.append(val_y[i:i+n_out, 0])
+			if(len(val_y) - i >= n_out):
+				preds_val.append(preds[:, 0])
+				obs_val.append(val_y[i:i+n_out, 0])
+
+		preds_val = np.array(preds_val)
+		obs_val = np.array(obs_val)
+
+		# for test
+		rmses_val = []
+		rmse_val = 0
+		weigth = 1.5
+		step = 0.1
+		for i in range(n_out):
+			tmp = np.zeros((len(preds_val[:, i].ravel()), n_features))
+			tmp[:, 0] = preds_val[:, i].ravel()
+			tmp = scaler.inverse_transform(tmp)[:, 0]
+
+			rmses_val.append(math.sqrt(mean_squared_error(obs_val[:, i], tmp)))
+			rmse_val += rmses_val[-1]*weigth
+			weigth -= step
+	else:
+		rmse_val = None
+
 
 	# Testing
 	preds_test = []
@@ -188,15 +214,22 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 	preds_test = np.array(preds_test)
 	obs_test = np.array(obs_test)
 
-	# for test
-	rmses = []
-	rmse = 0
-	weigth = 1.5
-	step = 0.1
-	for i in range(n_out):
-		rmses.append(math.sqrt(mean_squared_error(obs_test[:, i], preds_test[:, i])))
-		rmse += rmses[-1]*weigth
-		weigth -= step
+	if(calc_test_error):
+		# for test
+		rmses = []
+		rmse = 0
+		weigth = 1.5
+		step = 0.1
+		for i in range(n_out):
+			tmp = np.zeros((len(preds_test[:, i].ravel()), n_features))
+			tmp[:, 0] = preds_test[:, i].ravel()
+			tmp = scaler.inverse_transform(tmp)[:, 0]
+
+			rmses.append(math.sqrt(mean_squared_error(obs_test[:, i], tmp)))
+			rmse += rmses[-1]*weigth
+			weigth -= step
+	else:
+		rmse = None
 
 	full_data = np.append(np.append(np.append(train_X, val_X, axis=0), test_X, axis=0), np.expand_dims(last_values, axis=0), axis=0)
 
@@ -214,70 +247,117 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 	tmp[:, 0] = last
 	last = scaler.inverse_transform(tmp)[:, 0]
 
-	return rmse, obs_test, preds_test, last.ravel()
+	return rmse, rmse_val, obs_test, preds_test, last.ravel()
 
 ###################### random forest ##########################
-def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values):
+def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error):
 	from sklearn.ensemble import RandomForestRegressor
 	model = RandomForestRegressor(n_estimators=n_estimators, max_features=max_features, min_samples_leaf=min_samples, n_jobs=-1)
 	model.fit(train_X, train_y.ravel())
+	if(calc_val_error):
+		_, _, rmse_val = calculate_rmse(n_series, n_features, n_lags, val_X, val_y, scaler, model)
+	else:
+		rmse_val=None
 
-	y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
+	if(calc_test_error):
+		y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
+	else:
+		y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
+		rmse = None
 
 	last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
-	return rmse, y, y_hat, last
+	return rmse, rmse_val, y, y_hat, last
 
 ####################### ada boost ###############################
-def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, lr, n_features, n_lags, scaler, last_values):
+def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, lr, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error):
 	from sklearn.ensemble import AdaBoostRegressor
 	model = AdaBoostRegressor(n_estimators=n_estimators, learning_rate=lr)
 	model.fit(train_X, train_y.ravel())
+	
+	if(calc_val_error):
+		_, _, rmse_val = calculate_rmse(n_series, n_features, n_lags, val_X, val_y, scaler, model)
+	else:
+		rmse_val=None
 
-	y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
-
+	if(calc_test_error):
+		y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
+	else:
+		y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
+		rmse = None
 	last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
-	return rmse, y, y_hat, last
+	return rmse, rmse_val, y, y_hat, last
 
 ####################################### SVM ##############################
-def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values):
+def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error):
 	from sklearn.svm import SVR
 	model = SVR(kernel='poly', degree=1, gamma='scale')
 	model.fit(train_X, train_y.ravel())
 
-	y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
+	if(calc_val_error):
+		_, _, rmse_val = calculate_rmse(n_series, n_features, n_lags, val_X, val_y, scaler, model)
+	else:
+		rmse_val=None
+
+	if(calc_test_error):
+		y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
+	else:
+		y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
+		rmse = None
 
 	last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
-	return rmse, y, y_hat, last
+	return rmse, rmse_val, y, y_hat, last
 
 ###################################### ARIMA #########################################
-def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values):
+def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error):
 	from statsmodels.tsa.statespace.sarimax import SARIMAX
-	from statsmodels.tools.sm_exceptions import ConvergenceWarning
+	from numpy.linalg.linalg import LinAlgError
 	import warnings
 	test_size = len(test_y)
 	test_y = np.append(test_y, last_values)
 	y_hat = []
-	for i in range(test_size + 1):
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore", category=ConvergenceWarning)
-			model = SARIMAX(train_X, order=(n_lags, d, q))
+	y_hat_val = []
+	try:
+
+		for i in range(len(val_X)):
+			warnings.filterwarnings("ignore")
+			model = SARIMAX(train_X, order=(n_lags, d, q), enforce_invertibility=False, enforce_stationarity=False)
+			model_fit = model.fit(disp=0, maxiter=200, method='powell')
+			output = model_fit.forecast()[0]
+			y_hat_val.append(output)
+			train_X = np.append(train_X, val_X[i])
+
+		for i in range(test_size + 1):
+			warnings.filterwarnings("ignore")
+			model = SARIMAX(train_X, order=(n_lags, d, q), enforce_invertibility=False, enforce_stationarity=False)
 			model_fit = model.fit(disp=0, maxiter=200, method='powell')
 			output = model_fit.forecast()[0]
 			y_hat.append(output)
 			train_X = np.append(train_X, test_y[i])
+		
+		if(calc_val_error):
+			rmse_val = math.sqrt(mean_squared_error(val_X, y_hat_val))
+		else:
+			rmse_val = None
+		
+		if(calc_test_error):
+			rmse = math.sqrt(mean_squared_error(test_y, y_hat))
+		else:
+			rmse = None
 
-	rmse = math.sqrt(mean_squared_error(test_y, y_hat))
-	model = SARIMAX(train_X, order=(n_lags, d, q))
-	model_fit = model.fit(disp=0)
-	last = model_fit.forecast()[0]
-	last = last.reshape(-1, 1)
-	Xs = np.ones((last.shape[0], n_lags * n_features))
-	inv_yhat = np.concatenate((last, Xs[:, -(n_features - n_series):]), axis=1)
-	inv_yhat = scaler.inverse_transform(inv_yhat)
+		model = SARIMAX(train_X, order=(n_lags, d, q), enforce_invertibility=False, enforce_stationarity=False)
+		model_fit = model.fit(disp=0)
+		last = model_fit.forecast()[0]
+		last = last.reshape(-1, 1)
+		Xs = np.ones((last.shape[0], n_lags * n_features))
+		inv_yhat = np.concatenate((last, Xs[:, -(n_features - n_series):]), axis=1)
+		inv_yhat = scaler.inverse_transform(inv_yhat)
 
-	inv_yhat = inv_yhat[:,0:n_series]
+		inv_yhat = inv_yhat[:, 0:n_series]
+	except (ValueError, LinAlgError):
+		return 9e+10, 9e+10, None, None, None
 
-	return rmse, test_y, y_hat, inv_yhat[-1]
+
+	return rmse, rmse_val, test_y, y_hat, inv_yhat[-1]
