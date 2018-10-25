@@ -15,6 +15,8 @@ from hyperopt import STATUS_OK
 
 from timeit import default_timer as timer
 
+ID_TO_MODELNAME = {0:'lstm', 1:'randomForest', 2:'adaBoost', 3:'svm', 4:'arima', 5:'lstmNoSW'}
+
 def normalize_data(values, scale=(-1,1)):
 	# Be sure all values are numbers
 	values = values.astype('float32')
@@ -150,16 +152,18 @@ def calculate_diff_level_for_stationarity(values, scaler, maxi):
 
 
 # for bayes optimization
-def objective(params, values, scaler, n_series, id_model, n_features, verbosity):
+def objective(params, values, scaler, n_series, id_model, n_features, verbosity, model_file_name, MAX_EVALS):
 	
 	# Keep track of evals
 	global ITERATION
 	
 	ITERATION += 1
-	out_file = 'trials/gbm_trials.csv'
+	out_file = 'trials/gbm_trials_' + ID_TO_MODELNAME[id_model] + '_' + str(MAX_EVALS) + '.csv'
 	print(ITERATION, params)
 
 	if(id_model == 0):
+		if(model_file_name == None): model_file_name = 'models/trials-lstm.h5'
+
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags', 'n_epochs', 'batch_size', 'n_hidden']:
 			params[parameter_name] = int(params[parameter_name])
@@ -168,12 +172,15 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity)
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
-		rmse, rmse_val, _, _, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
+		rmse, rmse_val, _, _, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
+														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
 	elif(id_model == 1):
+		if(model_file_name == None): model_file_name = 'models/trials-randomForest.joblib'
+
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags', 'n_estimators', 'max_features', 'min_samples']:
 			params[parameter_name] = int(params[parameter_name])
@@ -182,12 +189,14 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity)
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
+		rmse, rmse_val, _, _, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
+																n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
 	elif(id_model == 2):
+		if(model_file_name == None): model_file_name = 'models/trials-adaBoost.joblib'
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags', 'n_estimators', 'max_depth']:
 			params[parameter_name] = int(params[parameter_name])
@@ -196,12 +205,14 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity)
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
+		rmse, rmse_val, _, _, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
+															params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
 	elif(id_model == 3):
+		if(model_file_name == None): model_file_name = 'models/trials-svm.joblib'
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags']:
 			params[parameter_name] = int(params[parameter_name])
@@ -210,12 +221,14 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity)
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
+		rmse, rmse_val, _, _, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
+													verbosity, False, None, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
 	elif(id_model == 4):
+		if(model_file_name == None): model_file_name = 'models/arima.pkl'
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags', 'd', 'q']:
 			params[parameter_name] = int(params[parameter_name])
@@ -226,12 +239,14 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity)
 		wall = int(len(values)*0.6)
 		wall_val= int(len(values)*0.2)
 		train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
-		rmse, rmse_val, _, _, _ = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity)
+		rmse, rmse_val, _, _, _ = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
+														calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
 	elif(id_model == 5):
+		if(model_file_name == None): model_file_name = 'models/trials-lstm-noSW.h5'
 		for parameter_name in ['n_epochs']:
 			params[parameter_name] = int(params[parameter_name])
 		calc_val_error = True
@@ -239,7 +254,8 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity)
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(values)
-		rmse, rmse_val, _, _, _ = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, last_values, calc_val_error, calc_test_error, verbosity)
+		rmse, rmse_val, _, _, _ = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, 
+																		last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
 		print('rmse: ', rmse)
@@ -255,7 +271,7 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity)
 	return {'loss': rmse, 'params': params, 'iteration': ITERATION,
 			'train_time': run_time, 'status': STATUS_OK}
 
-def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity):
+def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name):
 	global ITERATION
 	ITERATION = 0
 
@@ -291,7 +307,7 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	bayes_trials = Trials()
 
 	# File to save first results
-	out_file = 'trials/gbm_trials.csv'
+	out_file = 'trials/gbm_trials_' + ID_TO_MODELNAME[id_model] + '_' + str(MAX_EVALS) + '.csv'
 	of_connection = open(out_file, 'w')
 	writer = csv.writer(of_connection)
 
@@ -301,7 +317,7 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	of_connection.close()
 
 	# Run optimization
-	best = fmin(fn = lambda x: objective(x, values, scaler, n_series, id_model, n_features, verbosity), space = space, algo = tpe.suggest, max_evals = MAX_EVALS, trials = bayes_trials, rstate = np.random.RandomState(np.random.randint(100)))
+	best = fmin(fn = lambda x: objective(x, values, scaler, n_series, id_model, n_features, verbosity, model_file_name, MAX_EVALS), space = space, algo = tpe.suggest, max_evals = MAX_EVALS, trials = bayes_trials, rstate = np.random.RandomState(np.random.randint(100)))
 
 	# store best results
 	of_connection = open('trials/bests.txt', 'a')

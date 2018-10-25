@@ -55,7 +55,7 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
 def select_features_ga(dataFrame, max_vars, original_cols):
-	import predictor
+	import utils
 	import random
 	import time
 	from matplotlib import pyplot as plt
@@ -89,9 +89,9 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 			model = SVR(gamma='scale')
 			#model = SVR(kernel='linear')
 
-			scaled, scaler = predictor.normalize_data(df.values)
+			scaled, scaler = utils.normalize_data(df.values)
 			values, n_lags, n_series = scaled, 4, 1
-			train_X, val_X, test_X, train_y, val_y, test_y, last_values = predictor.transform_values(values, n_lags, n_series, 0)
+			train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, n_lags, n_series, 0)
 			model.fit(train_X, train_y.ravel())
 			pred = model.predict(val_X)
 

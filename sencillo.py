@@ -12,13 +12,12 @@ select = 0 # set to True for performing feature selection
 original = 1 # set to True for training with original data (not feature selected)
 time_steps = 10 # number of periods in the future to predict
 max_vars = 50 # maximum number of variables for taking in count for variable selection
-plots_level = 1 # level of log plots
-########## niveles de plot tambien para testing
-parameters_file_name = 'parameters/default_lstm_10timesteps.txt'
+verbosity = 1 # level of logs
+parameters_file_name = None # 'parameters/default_lstm_10timesteps.txt'
 
 cols = list(df.columns)
 ######## hacer argumento para archivo de varaibles seleccioandas igual que apra el de leer parametros *** hecho con el archivo de inico
-pred = [predictor.predictor(df.values[:i, :], cols, model, parameters, select, original, time_steps, max_vars, plots_level, parameters_file_name) for i in range(400, 460, time_steps)]
+pred = [predictor.predictor(df.values[:i, :], cols, model, parameters, select, original, time_steps, max_vars, verbosity, parameters_file_name) for i in range(400, 460, time_steps)]
 
 plt.plot(df.values[400:, 0], label='observations')
 if(time_steps == 1):

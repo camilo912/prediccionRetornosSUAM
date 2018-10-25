@@ -16,7 +16,8 @@ class Predictor():
 			if(self.original):
 				self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28 
 			else:
-				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 7, 288, 65 # 15, 91, 24, 2
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 7, 288, 65 # 15, 91, 24, 2
+				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 51, 21, 108, 35
 		
 		elif(self.id_model == 1):
 			self.n_lags, self.n_estimators, self.max_features, self.min_samples = 4, 762, 18, 3 # for selected features
@@ -38,18 +39,18 @@ class Predictor():
 		
 		elif(self.id_model == 5):
 			if(self.original):
-				self.lr, self.n_epochs = 0.014540077212290003, 37
+				self.lr, self.n_epochs = 7.389422743950269e-05, 182 # 0.014540077212290003, 37
 			else:
 				self.lr, self.n_epochs = 0.2050774898644015, 22
 
 
-	def predict(self, data, original_cols, tune, select, time_steps, max_vars, verbosity, parameters_file_name=None, max_evals=100):
+	def predict(self, data, original_cols, tune, select, time_steps, max_vars, verbosity, parameters_file_name=None, max_evals=100, only_predict=False, model_file_name=None):
 		if(select):
 			self.original = 0
 			# feature selection
 			import feature_selection
 			# feature_selection.select_features_sa(pd.DataFrame(data), max_vars)
-			feature_selection.select_features_ga(pd.DataFrame(data), max_vars, self.original_cols)
+			feature_selection.select_features_ga(pd.DataFrame(data), max_vars, original_cols)
 			# df = pd.read_csv('data/forecast-competition-complete.csv', index_col=0, header=0)
 			# feature_selection.select_features_stepwise_forward(df, max_vars)
 		
@@ -61,24 +62,23 @@ class Predictor():
 		self.MAX_EVALS = max_evals
 		values, scaler = utils.normalize_data(data)
 		n_series = time_steps
-		calc_val_error = False
-		calc_test_error = True
-
 		n_features = values.shape[1]
 
+		calc_val_error = False
+		calc_test_error = True
 		if(tune):
-			best, results = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, scaler, n_features, n_series, self.original, verbosity)
+			best, results = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, scaler, n_features, n_series, self.original, verbosity, model_file_name)
 
 			if(self.id_model == 0):
 				# Parameters
 				self.n_lags, self.n_epochs, self.batch_size, self.n_hidden = int(best['n_lags']), int(best['n_epochs']), int(best['batch_size']), int(best['n_hidden'])
-				f = open('optimized_lstm_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_lstm_%dtimesteps.pars' % time_steps, 'w')
 				f.write('%d, %d, %d, %d\n' % (self.n_lags, self.n_epochs, self.batch_size, self.n_hidden))
 				f.close()
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 1)
 				
-				rmse, _, y, y_hat, last = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.batch_size, self.n_hidden, n_features, self.n_lags, scaler, 
-																	last_values, calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.batch_size, self.n_hidden, n_features, self.n_lags, 
+																scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				
 				print('rmse: %s ' % rmse)
 				
@@ -92,12 +92,13 @@ class Predictor():
 			
 			elif(self.id_model == 1 and n_series == 1):
 				self.n_lags, self.n_estimators, self.max_features, self.min_samples = int(best['n_lags']), int(best['n_estimators']), int(best['max_features']), int(best['min_samples'])
-				f = open('optimized_randomForest_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_randomForest_%dtimesteps.pars' % time_steps, 'w')
 				f.write('%d, %d, %d, %d\n' % (self.n_lags, self.n_estimators, self.max_features, self.min_samples))
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
-				rmse, _, y, y_hat, last = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.max_features, self.min_samples, n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.max_features, self.min_samples, 
+																		n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
 				
 				print('rmse: %s ' % rmse)
 
@@ -108,12 +109,13 @@ class Predictor():
 			
 			elif(self.id_model == 2 and n_series == 1):
 				self.n_lags, self.n_estimators, self.lr, self.max_depth = int(best['n_lags']), int(best['n_estimators']), best['lr'], best['max_depth']
-				f = open('optimized_adaBoost_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_adaBoost_%dtimesteps.pars' % time_steps, 'w')
 				f.write('%d, %d, %f\n' % (self.n_lags, self.n_estimators, self.lr))
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
-				rmse, _, y, y_hat, last = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.lr, self.max_depth, n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.lr, self.max_depth, n_features, 
+																	self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
 
 				print('rmse: %s ' % rmse)
 
@@ -124,12 +126,13 @@ class Predictor():
 			
 			elif(self.id_model == 3 and n_series == 1):
 				self.n_lags = int(best['n_lags'])
-				f = open('optimized_SVM_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_SVM_%dtimesteps.pars' % time_steps, 'w')
 				f.write('%d\n' % (self.n_lags))
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
-				rmse, _, y, y_hat, last = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, self.n_lags, scaler, last_values, calc_val_error, 
+															calc_test_error, verbosity)
 				
 				print('rmse: %s ' % rmse)
 
@@ -140,7 +143,7 @@ class Predictor():
 			
 			elif(self.id_model == 4 and n_series == 1):
 				self.n_lags, self.d, self.q = int(best['n_lags']), int(best['d']), int(best['q'])
-				f = open('optimized_arima_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_arima_%dtimesteps.pars' % time_steps, 'w')
 				f.write('%d, %d, %d\n' % (self.n_lags, self.d, self.q))
 				f.close()
 
@@ -148,7 +151,8 @@ class Predictor():
 				wall_val= int(len(values)*0.2)
 				train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, 
+																calc_test_error, verbosity)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
@@ -160,13 +164,13 @@ class Predictor():
 			
 			elif(self.id_model == 5):
 				self.lr, self.n_epochs = best['lr'], int(best['n_epochs'])
-				f = open('optimized_lstmNoSW_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_lstmNoSW_%dtimesteps.pars' % time_steps, 'w')
 				f.write('%f, %d\n' % (self.lr, self.n_epochs))
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(data)
-				rmse, _, y, y_hat, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, last_values, 
-																				calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
+																				last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 
 				print('rmse: %s ' % rmse)
 				
@@ -182,7 +186,9 @@ class Predictor():
 				raise Exception('hyperparameters combination is not in the valid options.')
 		
 		else:
-			if(self.id_model == 0):			
+			if(self.id_model == 0):
+				if(model_file_name == None): model_file_name = 'models/lstm.h5'
+
 				if(parameters_file_name):
 					try:
 						f = open(parameters_file_name, 'r')
@@ -196,7 +202,8 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 1)
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.batch_size, self.n_hidden, n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.batch_size, self.n_hidden, n_features, 
+																self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 				
 				print('rmse: %s ' % rmse)
@@ -210,6 +217,7 @@ class Predictor():
 				return last
 			
 			elif(self.id_model == 1 and n_series == 1):
+				if(model_file_name == None): model_file_name = 'models/randomForest.joblib'
 				if(parameters_file_name):
 					try:
 						f = open(parameters_file_name, 'r')
@@ -224,8 +232,8 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.max_features, self.min_samples, n_features, self.n_lags, 
-																			scaler, last_values, calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.max_features, self.min_samples, 
+																		n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
@@ -236,6 +244,7 @@ class Predictor():
 				return last.squeeze()
 			
 			elif(self.id_model == 2 and n_series == 1):
+				if(model_file_name == None): model_file_name = 'models/adaBoost.joblib'
 				if(parameters_file_name):
 					try:
 						f = open(parameters_file_name, 'r')
@@ -250,8 +259,9 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.lr, self.max_depth, n_features, self.n_lags, scaler, last_values, 
-																		calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.lr, self.max_depth, n_features, 
+																	self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
+				
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
@@ -262,6 +272,7 @@ class Predictor():
 				return last.squeeze()
 			
 			elif(self.id_model == 3 and n_series == 1):
+				if(model_file_name == None): model_file_name = 'models/svm.joblib'
 				if(parameters_file_name):
 					try:
 						f = open(parameters_file_name, 'r')
@@ -276,7 +287,7 @@ class Predictor():
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
 				start = timer()
 				rmse, _, y, y_hat, last = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, self.n_lags, scaler, last_values, calc_val_error, 
-																	calc_test_error, verbosity)
+																	calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
@@ -287,6 +298,7 @@ class Predictor():
 				return last.squeeze()
 			
 			elif(self.id_model == 4 and n_series == 1):
+				if(model_file_name == None): model_file_name = 'models/arima.pkl'
 				if(parameters_file_name):
 					try:
 						f = open(parameters_file_name, 'r')
@@ -302,7 +314,8 @@ class Predictor():
 				wall_val= int(len(values)*0.2)
 				train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, 
+																calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
@@ -313,6 +326,7 @@ class Predictor():
 				return last.squeeze()
 			
 			elif(self.id_model == 5):
+				if(model_file_name == None): model_file_name = 'models/lstm-noSW.h5'
 				if(parameters_file_name):
 					try:
 						f = open(parameters_file_name, 'r')
@@ -326,8 +340,8 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(data)
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, last_values, 
-																				calc_val_error, calc_test_error, verbosity)
+				rmse, _, y, y_hat, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
+																				last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 				
 				print('rmse: ', rmse)
