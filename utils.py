@@ -160,6 +160,9 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 	ITERATION += 1
 	out_file = 'trials/gbm_trials_' + ID_TO_MODELNAME[id_model] + '_' + str(MAX_EVALS) + '.csv'
 	print(ITERATION, params)
+	
+	calc_val_error = True
+	calc_test_error = True
 
 	if(id_model == 0):
 		if(model_file_name == None): model_file_name = 'models/trials-lstm.h5'
@@ -167,12 +170,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags', 'n_epochs', 'batch_size', 'n_hidden']:
 			params[parameter_name] = int(params[parameter_name])
-		calc_val_error = True
-		calc_test_error = True
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
-		rmse, rmse_val, _, _, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
+		rmse, rmse_val, _, _, _, _, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
 														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
@@ -184,12 +185,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags', 'n_estimators', 'max_features', 'min_samples']:
 			params[parameter_name] = int(params[parameter_name])
-		calc_val_error = True
-		calc_test_error = True
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
+		rmse, rmse_val, _, _, _, _, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
 																n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
@@ -200,12 +199,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags', 'n_estimators', 'max_depth']:
 			params[parameter_name] = int(params[parameter_name])
-		calc_val_error = True
-		calc_test_error = True
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
+		rmse, rmse_val, _, _, _, _, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
 															params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
@@ -216,12 +213,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags']:
 			params[parameter_name] = int(params[parameter_name])
-		calc_val_error = True
-		calc_test_error = True
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
+		rmse, rmse_val, _, _, _, _, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
 													verbosity, False, None, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
@@ -232,14 +227,12 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		# Make sure parameters that need to be integers are integers
 		for parameter_name in ['n_lags', 'd', 'q']:
 			params[parameter_name] = int(params[parameter_name])
-		calc_val_error = True
-		calc_test_error = True
 
 		start = timer()
 		wall = int(len(values)*0.6)
 		wall_val= int(len(values)*0.2)
 		train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
-		rmse, rmse_val, _, _, _ = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
+		rmse, rmse_val, _, _, _, _, _ = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
 														calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start
@@ -249,12 +242,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		if(model_file_name == None): model_file_name = 'models/trials-lstm-noSW.h5'
 		for parameter_name in ['n_epochs']:
 			params[parameter_name] = int(params[parameter_name])
-		calc_val_error = True
-		calc_test_error = True
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(values)
-		rmse, rmse_val, _, _, _ = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, 
+		rmse, rmse_val, _, _, _, _, _ = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, 
 																		last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		rmse = rmse*0.7 + rmse_val*0.3
 		run_time = timer() - start

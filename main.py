@@ -21,12 +21,12 @@ def main():
 
 	# Parameters
 	model = 4 # id of model to use
-	parameters = 1 # Set to True for performing bayes optimization looking for best parameters
+	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
-	original = 1 # set to True for training with original data (not feature selected)
+	original = 0 # set to True for training with original data (not feature selected)
 	time_steps = 1 # number of periods in the future to predict
 	max_vars = 50 # maximum number of variables for taking in count for variable selection
-	verbosity = 0 # level of logs
+	verbosity = 1 # level of logs
 	parameters_file_name = None #'parameters/default_lstm_%dtimesteps.pars' % time_steps
 	MAX_EVALS = 100
 	only_predict = False
@@ -53,7 +53,7 @@ def main():
 
 	o, p = [], []
 	ini = 400
-	fin = 401
+	fin = 411
 	step = time_steps
 	assert fin <= 500
 

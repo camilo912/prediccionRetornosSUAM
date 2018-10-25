@@ -64,7 +64,7 @@ class Predictor():
 		n_series = time_steps
 		n_features = values.shape[1]
 
-		calc_val_error = False
+		calc_val_error = False if verbosity < 2 else True
 		calc_test_error = True
 		if(tune):
 			best, results = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, scaler, n_features, n_series, self.original, verbosity, model_file_name)
@@ -77,14 +77,20 @@ class Predictor():
 				f.close()
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 1)
 				
-				rmse, _, y, y_hat, last = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.batch_size, self.n_hidden, n_features, self.n_lags, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.batch_size, self.n_hidden, n_features, self.n_lags, 
 																scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				
 				print('rmse: %s ' % rmse)
 				
+				if(verbosity > 1):
+					if(n_series > 1):
+						utils.plot_data_lagged_blocks([y_valset.ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
+					else:
+						utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
+
 				if(verbosity > 0):
 					if(n_series > 1):
-						utils.plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
+						utils.plot_data_lagged_blocks([y.ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
 					else:
 						utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
@@ -97,10 +103,13 @@ class Predictor():
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
-				rmse, _, y, y_hat, last = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.max_features, self.min_samples, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.max_features, self.min_samples, 
 																		n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
 				
 				print('rmse: %s ' % rmse)
+
+				if(verbosity > 1):
+					utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
@@ -114,10 +123,13 @@ class Predictor():
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
-				rmse, _, y, y_hat, last = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.lr, self.max_depth, n_features, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.lr, self.max_depth, n_features, 
 																	self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
 
 				print('rmse: %s ' % rmse)
+
+				if(verbosity > 1):
+					utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
@@ -131,10 +143,13 @@ class Predictor():
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
-				rmse, _, y, y_hat, last = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, self.n_lags, scaler, last_values, calc_val_error, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, self.n_lags, scaler, last_values, calc_val_error, 
 															calc_test_error, verbosity)
 				
 				print('rmse: %s ' % rmse)
+
+				if(verbosity > 1):
+					utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
@@ -151,11 +166,14 @@ class Predictor():
 				wall_val= int(len(values)*0.2)
 				train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, 
 																calc_test_error, verbosity)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
+
+				if(verbosity > 1):
+					utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
@@ -169,11 +187,17 @@ class Predictor():
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(data)
-				rmse, _, y, y_hat, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
 																				last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 
 				print('rmse: %s ' % rmse)
 				
+				if(verbosity > 1):
+					if(n_series > 1):
+						utils.plot_data_lagged_blocks([y_valset.ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
+					else:
+						utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
+
 				if(verbosity > 0):
 					if(n_series > 1):
 						utils.plot_data_lagged_blocks([test_y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
@@ -202,11 +226,17 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 1)
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.batch_size, self.n_hidden, n_features, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.batch_size, self.n_hidden, n_features, 
 																self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 				
 				print('rmse: %s ' % rmse)
+
+				if(verbosity > 1):
+					if(n_series > 1):
+						utils.plot_data_lagged_blocks([y_valset.ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
+					else:
+						utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					if(n_series > 1):
@@ -232,11 +262,14 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.max_features, self.min_samples, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.max_features, self.min_samples, 
 																		n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
+
+				if(verbosity > 1):
+					utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
@@ -259,12 +292,15 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.lr, self.max_depth, n_features, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.lr, self.max_depth, n_features, 
 																	self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
+
+				if(verbosity > 1):
+					utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
@@ -286,11 +322,14 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, self.n_lags, scaler, last_values, calc_val_error, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, self.n_lags, scaler, last_values, calc_val_error, 
 																	calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
+
+				if(verbosity > 1):
+					utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
@@ -314,11 +353,14 @@ class Predictor():
 				wall_val= int(len(values)*0.2)
 				train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, 
 																calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
+
+				if(verbosity > 1):
+					utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
@@ -340,11 +382,17 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(data)
 				start = timer()
-				rmse, _, y, y_hat, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
 																				last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 				
 				print('rmse: ', rmse)
+
+				if(verbosity > 1):
+					if(n_series > 1):
+						utils.plot_data_lagged_blocks([y_valset.ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
+					else:
+						utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					if(n_series > 1):
