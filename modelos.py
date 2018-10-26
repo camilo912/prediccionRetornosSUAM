@@ -6,6 +6,9 @@ import math
 
 def calculate_rmse(n_series, n_features, n_lags, X, y, scaler, model):
 	yhat = model.predict(X)
+	#print(X[:10])
+	#print(yhat[:10])
+	#print(y[:10])
 	Xs = np.ones((X.shape[0], n_lags * n_features))
 	yhat = yhat.reshape(-1, n_series)
 	inv_yhats = []
@@ -28,7 +31,6 @@ def calculate_rmse(n_series, n_features, n_lags, X, y, scaler, model):
 		inv_ys.append(inv_y)
 
 	inv_y = np.array(inv_ys).T
-
 
 	# calculate RMSE	
 	rmse = math.sqrt(mean_squared_error(inv_y, inv_yhat)) # / np.max(inv_y) * 100
@@ -72,7 +74,9 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		from keras import backend as K
 
 		drop_p = 0.05
+		verbose_dict = {0:0, 1:2, 2:1}
 		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
+		verbose = verbose_dict[verbose]
 
 		model = Sequential()
 		model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
@@ -156,7 +160,9 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 
 		drop_p = 0.05
 		lr_decay = 0.0
+		verbose_dict = {0:0, 1:2, 2:1}
 		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
+		verbose = verbose_dict[verbose]
 
 		train_model = Sequential()
 
@@ -222,7 +228,7 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 			rmse_val += rmses_val[-1]*weigth
 			weigth -= step
 	else:
-		rmse_val = None
+		rmse_val, preds_val, obs_val = None, None, None
 
 
 	# Testing
@@ -291,7 +297,7 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 	if(not only_predict):
 		from sklearn.ensemble import RandomForestRegressor
 
-		verbose = 0 if verbosity < 3 else verbosity - 2
+		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
 		model = RandomForestRegressor(n_estimators=n_estimators, max_features=max_features, min_samples_leaf=min_samples, n_jobs=-1, verbose=verbose)
 		model.fit(train_X, train_y.ravel())
 		joblib.dump(model, model_file_name)
@@ -300,7 +306,7 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 	if(calc_val_error):
 		y_valset, y_hat_val, rmse_val = calculate_rmse(n_series, n_features, n_lags, val_X, val_y, scaler, model)
 	else:
-		rmse_val=None
+		rmse_val, y_valset, y_hat_val = None, None, None
 
 	if(calc_test_error):
 		y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
@@ -328,7 +334,7 @@ def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_
 	if(calc_val_error):
 		y_valset, y_hat_val, rmse_val = calculate_rmse(n_series, n_features, n_lags, val_X, val_y, scaler, model)
 	else:
-		rmse_val=None
+		rmse_val, y_valset, y_hat_val = None, None, None
 
 	if(calc_test_error):
 		y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
@@ -345,7 +351,7 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 	if(not only_predict):
 		from sklearn.svm import SVR
 
-		verbose = 0 if verbosity < 3 else verbosity - 2
+		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
 		model = SVR(kernel='poly', degree=1, gamma='scale', verbose=verbose)
 		model.fit(train_X, train_y.ravel())
 		joblib.dump(model, model_file_name)
@@ -355,7 +361,7 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 	if(calc_val_error):
 		y_valset, y_hat_val, rmse_val = calculate_rmse(n_series, n_features, n_lags, val_X, val_y, scaler, model)
 	else:
-		rmse_val=None
+		rmse_val, y_valset, y_hat_val = None, None, None
 
 	if(calc_test_error):
 		y, y_hat, rmse = calculate_rmse(n_series, n_features, n_lags, test_X, test_y, scaler, model)
@@ -381,7 +387,7 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 
 	#SARIMAX.__getnewargs__ = __getnewargs__
 
-	preds_size = len(val_y) + len(test_y) + 1
+	# preds_size = len(val_y) + len(test_y) + 1
 	# test_y = np.append(test_y, last_values)
 	y_hat = []
 	y_hat_val = []
@@ -389,14 +395,17 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 		# warnings.filterwarnings("ignore")
 		if(not only_predict):
 			verbose = 0 if verbosity < 3 else verbosity - 2
-			model = SARIMAX(train_X, order=(n_lags, d, q), enforce_invertibility=False, enforce_stationarity=False)
+			model = SARIMAX(train_X[:, 0], exog=train_X[:, 1:], order=(n_lags, d, q), enforce_invertibility=False, enforce_stationarity=False)
 			model_fit = model.fit(disp=verbose, iprint=verbose, maxiter=200, method='powell')
 			model_fit.save(model_file_name)
 		else:
 			model_fit = MLEResults.load(model_file_name)
 		
-		output = model_fit.forecast(preds_size)#[0]
+		# output = model_fit.forecast(preds_size)#[0]
+		all_exogs = np.append(np.append(train_X[:, 1:], val_X[:, 1:], axis=1), test_X[:, 1:], axis=1)
+		output = model_fit.predict(exog=val_X[:, 1:])
 		y_hat_val.extend(output[:len(val_y)])
+		output = model_fit.predict(exog=val_X[:, 1:])
 		y_hat.extend(output[len(val_y):len(val_y)+len(test_y)])
 		
 		if(calc_val_error):
@@ -433,7 +442,7 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 
 		inv_yhat = inv_yhat[:, 0:n_series]
 	except (ValueError, LinAlgError):
-		return 9e+10, 9e+10, None, None, None
+		return 9e+10, 9e+10, None, None, None, None, None
 
 
 	return rmse, rmse_val, test_y, y_hat, val_y, y_hat_val, inv_yhat[-1]

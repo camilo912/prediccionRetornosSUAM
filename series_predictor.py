@@ -17,7 +17,8 @@ class Predictor():
 				self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28 
 			else:
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 7, 288, 65 # 15, 91, 24, 2
-				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 51, 21, 108, 35
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 51, 21, 108, 35
+				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 17, 88, 41
 		
 		elif(self.id_model == 1):
 			self.n_lags, self.n_estimators, self.max_features, self.min_samples = 4, 762, 18, 3 # for selected features
@@ -35,6 +36,8 @@ class Predictor():
 			# self.n_lags, self.d, self.q = 11, 1, 2
 			# self.n_lags, self.d, self.q = 1, 0, 7
 			# self.n_lags, self.d, self.q = 2, 2, 11 # too slow
+
+			# self.n_lags, self.d, self.q = 0, 0, 2
 
 		
 		elif(self.id_model == 5):
@@ -84,13 +87,13 @@ class Predictor():
 				
 				if(verbosity > 1):
 					if(n_series > 1):
-						utils.plot_data_lagged_blocks([y_valset.ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
+						utils.plot_data_lagged_blocks([y_valset[:, 0].ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
 					else:
 						utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
 				if(verbosity > 0):
 					if(n_series > 1):
-						utils.plot_data_lagged_blocks([y.ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
+						utils.plot_data_lagged_blocks([y[:, 0].ravel(), y_hat], ['y', 'y_hat'], 'Test plot')
 					else:
 						utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
@@ -186,7 +189,7 @@ class Predictor():
 				f.write('%f, %d\n' % (self.lr, self.n_epochs))
 				f.close()
 
-				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(data)
+				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(values)
 				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
 																				last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 
@@ -194,7 +197,7 @@ class Predictor():
 				
 				if(verbosity > 1):
 					if(n_series > 1):
-						utils.plot_data_lagged_blocks([y_valset.ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
+						utils.plot_data_lagged_blocks([y_valset[:, 0].ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
 					else:
 						utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
@@ -234,7 +237,7 @@ class Predictor():
 
 				if(verbosity > 1):
 					if(n_series > 1):
-						utils.plot_data_lagged_blocks([y_valset.ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
+						utils.plot_data_lagged_blocks([y_valset[:, 0].ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
 					else:
 						utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
@@ -351,9 +354,10 @@ class Predictor():
 
 				wall = int(len(values)*0.6)
 				wall_val= int(len(values)*0.2)
-				train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
+				train_X, val_X, test_X, last_values = values[:wall, :], values[wall:wall+wall_val,:], values[wall+wall_val:-1,:], values[-1,:]
+				train_y, val_y, test_y = values[1:wall+1,0], values[wall+1:wall+wall_val+1,0], values[wall+wall_val+1:,0]
 				start = timer()
-				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, 
 																calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 
@@ -380,7 +384,7 @@ class Predictor():
 					readed_parameters = lines[0].strip().split(', ')
 					self.lr, self.n_epochs = float(readed_parameters[0]), int(readed_parameters[1])
 
-				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(data)
+				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(values)
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
 																				last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
@@ -390,7 +394,7 @@ class Predictor():
 
 				if(verbosity > 1):
 					if(n_series > 1):
-						utils.plot_data_lagged_blocks([y_valset.ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
+						utils.plot_data_lagged_blocks([y_valset[:, 0].ravel(), y_hat_val], ['y', 'y_hat'], 'Validation plot')
 					else:
 						utils.plot_data([y_valset, y_hat_val], ['y', 'y_hat'], 'Validation plot')
 
