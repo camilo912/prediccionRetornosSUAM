@@ -9,10 +9,11 @@ from timeit import default_timer as timer
 
 
 class Predictor():
-	def __init__(self, id_model, original):
+	def __init__(self, id_model, original, time_steps):
 		self.id_model = id_model
 		self.original = original
-		if(self.id_model == 0):
+		self.time_steps = time_steps
+		if(self.id_model == 0 and time_steps > 0):
 			if(self.original):
 				self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28 
 			else:
@@ -20,16 +21,16 @@ class Predictor():
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 51, 21, 108, 35
 				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 17, 88, 41
 		
-		elif(self.id_model == 1):
+		elif(self.id_model == 1 and time_steps == 1):
 			self.n_lags, self.n_estimators, self.max_features, self.min_samples = 4, 762, 18, 3 # for selected features
 		
-		elif(self.id_model == 2):
+		elif(self.id_model == 2 and time_steps == 1):
 			self.n_lags, self.n_estimators, self.lr, self.max_depth = 4, 808, 0.33209425848535884, 3
 		
-		elif(self.id_model == 3):
+		elif(self.id_model == 3 and time_steps == 1):
 			self.n_lags = 4
 		
-		elif(self.id_model == 4):
+		elif(self.id_model == 4 and time_steps == 1):
 			self.n_lags, self.d, self.q = 3, 0, 6 # best
 			# self.n_lags, self.d, self.q = 12, 0 , 1
 			# self.n_lags, self.d, self.q = 5, 2, 1
@@ -40,14 +41,16 @@ class Predictor():
 			# self.n_lags, self.d, self.q = 0, 0, 2
 
 		
-		elif(self.id_model == 5):
+		elif(self.id_model == 5 and time_steps > 0):
 			if(self.original):
 				self.lr, self.n_epochs = 7.389422743950269e-05, 182 # 0.014540077212290003, 37
 			else:
 				self.lr, self.n_epochs = 0.2050774898644015, 22
+		else:
+			raise Exception('hyperparameters combination is not in the valid options.')
 
 
-	def predict(self, data, original_cols, tune, select, time_steps, max_vars, verbosity, parameters_file_name=None, max_evals=100, only_predict=False, model_file_name=None):
+	def predict(self, data, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, only_predict=False, model_file_name=None):
 		if(select):
 			self.original = 0
 			# feature selection
@@ -64,7 +67,7 @@ class Predictor():
 
 		self.MAX_EVALS = max_evals
 		values, scaler = utils.normalize_data(data)
-		n_series = time_steps
+		n_series = self.time_steps
 		n_features = values.shape[1]
 
 		calc_val_error = False if verbosity < 2 else True
@@ -73,9 +76,10 @@ class Predictor():
 			best, results = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, scaler, n_features, n_series, self.original, verbosity, model_file_name)
 
 			if(self.id_model == 0):
+				if(model_file_name == None): model_file_name = 'models/lstm_%dtimesteps.h5' % (n_series)
 				# Parameters
 				self.n_lags, self.n_epochs, self.batch_size, self.n_hidden = int(best['n_lags']), int(best['n_epochs']), int(best['batch_size']), int(best['n_hidden'])
-				f = open('parameters/optimized_lstm_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_lstm_%dtimesteps.pars' % n_series, 'w')
 				f.write('%d, %d, %d, %d\n' % (self.n_lags, self.n_epochs, self.batch_size, self.n_hidden))
 				f.close()
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 1)
@@ -97,11 +101,12 @@ class Predictor():
 					else:
 						utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-				return last
+				return last.squeeze()
 			
 			elif(self.id_model == 1 and n_series == 1):
+				if(model_file_name == None): model_file_name = 'models/randomForest.joblib'
 				self.n_lags, self.n_estimators, self.max_features, self.min_samples = int(best['n_lags']), int(best['n_estimators']), int(best['max_features']), int(best['min_samples'])
-				f = open('parameters/optimized_randomForest_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_randomForest_%dtimesteps.pars' % n_series, 'w')
 				f.write('%d, %d, %d, %d\n' % (self.n_lags, self.n_estimators, self.max_features, self.min_samples))
 				f.close()
 
@@ -120,8 +125,9 @@ class Predictor():
 				return last.squeeze()
 			
 			elif(self.id_model == 2 and n_series == 1):
+				if(model_file_name == None): model_file_name = 'models/adaBoost.joblib'
 				self.n_lags, self.n_estimators, self.lr, self.max_depth = int(best['n_lags']), int(best['n_estimators']), best['lr'], best['max_depth']
-				f = open('parameters/optimized_adaBoost_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_adaBoost_%dtimesteps.pars' % n_series, 'w')
 				f.write('%d, %d, %f\n' % (self.n_lags, self.n_estimators, self.lr))
 				f.close()
 
@@ -140,8 +146,9 @@ class Predictor():
 				return last.squeeze()
 			
 			elif(self.id_model == 3 and n_series == 1):
+				if(model_file_name == None): model_file_name = 'models/svm.joblib'
 				self.n_lags = int(best['n_lags'])
-				f = open('parameters/optimized_SVM_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_SVM_%dtimesteps.pars' % n_series, 'w')
 				f.write('%d\n' % (self.n_lags))
 				f.close()
 
@@ -160,8 +167,9 @@ class Predictor():
 				return last.squeeze()
 			
 			elif(self.id_model == 4 and n_series == 1):
+				if(model_file_name == None): model_file_name = 'models/arima.pkl'
 				self.n_lags, self.d, self.q = int(best['n_lags']), int(best['d']), int(best['q'])
-				f = open('parameters/optimized_arima_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_arima_%dtimesteps.pars' % n_series, 'w')
 				f.write('%d, %d, %d\n' % (self.n_lags, self.d, self.q))
 				f.close()
 
@@ -184,8 +192,9 @@ class Predictor():
 				return last.squeeze()
 			
 			elif(self.id_model == 5):
+				if(model_file_name == None): model_file_name = 'models/lstm-noSW_%dtimesteps.h5' % (n_series)
 				self.lr, self.n_epochs = best['lr'], int(best['n_epochs'])
-				f = open('parameters/optimized_lstmNoSW_%dtimesteps.pars' % time_steps, 'w')
+				f = open('parameters/optimized_lstmNoSW_%dtimesteps.pars' % n_series, 'w')
 				f.write('%f, %d\n' % (self.lr, self.n_epochs))
 				f.close()
 
@@ -207,14 +216,14 @@ class Predictor():
 					else:
 						utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-				return last
+				return last.squeeze()
 			
 			else:
 				raise Exception('hyperparameters combination is not in the valid options.')
 		
 		else:
 			if(self.id_model == 0):
-				if(model_file_name == None): model_file_name = 'models/lstm.h5'
+				if(model_file_name == None): model_file_name = 'models/lstm_%dtimesteps.h5' % (n_series)
 
 				if(parameters_file_name):
 					try:
@@ -247,7 +256,7 @@ class Predictor():
 					else:
 						utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-				return last
+				return last.squeeze()
 			
 			elif(self.id_model == 1 and n_series == 1):
 				if(model_file_name == None): model_file_name = 'models/randomForest.joblib'
@@ -372,7 +381,7 @@ class Predictor():
 				return last.squeeze()
 			
 			elif(self.id_model == 5):
-				if(model_file_name == None): model_file_name = 'models/lstm-noSW.h5'
+				if(model_file_name == None): model_file_name = 'models/lstm-noSW_%dtimesteps.h5' % (n_series)
 				if(parameters_file_name):
 					try:
 						f = open(parameters_file_name, 'r')
@@ -404,7 +413,7 @@ class Predictor():
 					else:
 						utils.plot_data([y, y_hat], ['y', 'y_hat'], 'Test plot')
 
-				return last
+				return last.squeeze()
 			
 			else:
 				raise Exception('hyperparameters combination is not in the valid options.')

@@ -68,6 +68,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 	n_out = n_series
 	
 	if(not only_predict):
+		print('training...')
 		from keras.layers import Dense, Activation, Dropout, LSTM
 		from keras.models import Sequential
 		from keras.optimizers import Adam
@@ -155,6 +156,7 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 	import time
 
 	if(not only_predict):
+		print('training...')
 		from keras.models import Sequential
 		from keras.optimizers import Adam
 
@@ -295,6 +297,7 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name):
 	from sklearn.externals import joblib
 	if(not only_predict):
+		print('training...')
 		from sklearn.ensemble import RandomForestRegressor
 
 		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
@@ -322,6 +325,7 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, lr, max_depth, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name):
 	from sklearn.externals import joblib
 	if(not only_predict):
+		print('training...')
 		from sklearn.ensemble import AdaBoostRegressor
 		from sklearn.tree import DecisionTreeRegressor
 
@@ -349,6 +353,7 @@ def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_
 def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name):
 	from sklearn.externals import joblib
 	if(not only_predict):
+		print('training...')
 		from sklearn.svm import SVR
 
 		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
@@ -382,67 +387,65 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 	from numpy.linalg.linalg import LinAlgError
 	import warnings
 
-	#def __getnewargs__(self):
-	#	return ((self.endog),(self.k_lags, self.k_diff, self.k_ma))
-
-	#SARIMAX.__getnewargs__ = __getnewargs__
-
-	# preds_size = len(val_y) + len(test_y) + 1
-	# test_y = np.append(test_y, last_values)
 	y_hat = []
 	y_hat_val = []
-	try:
-		# warnings.filterwarnings("ignore")
-		if(not only_predict):
-			verbose = 0 if verbosity < 3 else verbosity - 2
-			model = SARIMAX(train_X[:, 0], exog=train_X[:, 1:], order=(n_lags, d, q), enforce_invertibility=False, enforce_stationarity=False)
-			model_fit = model.fit(disp=verbose, iprint=verbose, maxiter=200, method='powell')
-			model_fit.save(model_file_name)
-		else:
-			model_fit = MLEResults.load(model_file_name)
-		
-		# output = model_fit.forecast(preds_size)#[0]
-		all_exogs = np.append(np.append(train_X[:, 1:], val_X[:, 1:], axis=1), test_X[:, 1:], axis=1)
-		output = model_fit.predict(exog=val_X[:, 1:])
-		y_hat_val.extend(output[:len(val_y)])
-		output = model_fit.predict(exog=val_X[:, 1:])
-		y_hat.extend(output[len(val_y):len(val_y)+len(test_y)])
-		
-		if(calc_val_error):
-			tmp = np.zeros((len(y_hat_val), n_features))
-			tmp[:, 0] = y_hat_val
-			y_hat_val = scaler.inverse_transform(tmp)[:, 0]
+	#try:
+	if(not only_predict):
+		print('training...')
+		verbose = 0 if verbosity < 3 else verbosity - 2
+		model = SARIMAX(train_X[:, 0], exog=train_X[:, 1:], order=(n_lags, d, q), enforce_invertibility=False, enforce_stationarity=False, dynamic=False)
+		model_fit = model.fit(disp=verbose, iprint=verbose, maxiter=200, method='powell')
+		model_fit.save(model_file_name)
+	else:
+		model_fit = MLEResults.load(model_file_name)
+	
+	final_endogs = np.append(val_X[:, 0], test_X[:, 0], axis=0)
+	final_exogs = np.append(val_X[:, 1:], test_X[:, 1:], axis=0)
+	diff_train_original_model = len(train_X) - model_fit.nobs
+	if(diff_train_original_model > 0):
+		final_endogs = np.insert(final_endogs, 0, train_X[-diff_train_original_model:, 0], axis=0)
+		final_exogs = np.insert(final_exogs, 0, train_X[-diff_train_original_model:, 1:], axis=0)
 
-			tmp = np.zeros((len(val_X), n_features))
-			tmp[:, 0] = val_X
-			val_X = scaler.inverse_transform(tmp)[:, 0]
+	output = model_fit.predict(len(train_X), len(train_X) + len(val_X) + len(test_X) - 1, exog=final_exogs, endog=final_endogs)
+	y_hat_val.extend(output[:len(val_y)])
+	y_hat.extend(output[len(val_y):len(val_y)+len(test_y)])
+	
+	if(calc_val_error):
+		tmp = np.zeros((len(y_hat_val), n_features))
+		tmp[:, 0] = y_hat_val
+		y_hat_val = scaler.inverse_transform(tmp)[:, 0]
 
-			rmse_val = math.sqrt(mean_squared_error(val_X, y_hat_val))
-		else:
-			rmse_val, val_y, y_hat_val = None, None, None
-		
-		if(calc_test_error):
-			tmp = np.zeros((len(y_hat), n_features))
-			tmp[:, 0] = y_hat
-			y_hat = scaler.inverse_transform(tmp)[:, 0]
+		tmp = np.zeros((len(val_y), n_features))
+		tmp[:, 0] = val_y
+		val_y = scaler.inverse_transform(tmp)[:, 0]
 
-			tmp = np.zeros((len(test_y), n_features))
-			tmp[:, 0] = test_y
-			test_y = scaler.inverse_transform(tmp)[:, 0]
+		rmse_val = math.sqrt(mean_squared_error(val_y, y_hat_val))
+	else:
+		rmse_val, val_y, y_hat_val = None, None, None
+	
+	if(calc_test_error):
+		tmp = np.zeros((len(y_hat), n_features))
+		tmp[:, 0] = y_hat
+		y_hat = scaler.inverse_transform(tmp)[:, 0]
 
-			rmse = math.sqrt(mean_squared_error(test_y, y_hat))
-		else:
-			rmse, test_y, y_hat = None, None, None
+		tmp = np.zeros((len(test_y), n_features))
+		tmp[:, 0] = test_y
+		test_y = scaler.inverse_transform(tmp)[:, 0]
 
-		last = output[-1]
-		last = last.reshape(-1, 1)
-		Xs = np.ones((last.shape[0], n_lags * n_features))
-		inv_yhat = np.concatenate((last, Xs[:, -(n_features - n_series):]), axis=1)
-		inv_yhat = scaler.inverse_transform(inv_yhat)
+		rmse = math.sqrt(mean_squared_error(test_y, y_hat))
+	else:
+		rmse, test_y, y_hat = None, None, None
 
-		inv_yhat = inv_yhat[:, 0:n_series]
-	except (ValueError, LinAlgError):
-		return 9e+10, 9e+10, None, None, None, None, None
+	last = output[-1]
+	last = last.reshape(-1, 1)
+	Xs = np.ones((last.shape[0], n_lags * n_features))
+	inv_yhat = np.concatenate((last, Xs[:, -(n_features - n_series):]), axis=1)
+	inv_yhat = scaler.inverse_transform(inv_yhat)
+
+	inv_yhat = inv_yhat[:, 0:n_series]
+	#except (ValueError, LinAlgError) as exc:
+	#	print(exc)
+	#	return 9e+10, 9e+10, None, None, None, None, None
 
 
 	return rmse, rmse_val, test_y, y_hat, val_y, y_hat_val, inv_yhat[-1]

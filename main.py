@@ -20,7 +20,7 @@ def main():
 	# 5 -> LSTM without slidding windows
 
 	# Parameters
-	model = 4 # id of model to use
+	model = 0 # id of model to use
 	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 1 # set to True for training with original data (not feature selected)
@@ -53,11 +53,11 @@ def main():
 
 	o, p = [], []
 	ini = 400
-	fin = 450
+	fin = 410
 	step = time_steps
 	assert fin <= 500
 
-	predictor = series_predictor.Predictor(model, original)
+	predictor = series_predictor.Predictor(model, original, time_steps)
 
 	for i in range(ini, fin, step):
 		# only select variables once 
@@ -72,7 +72,7 @@ def main():
 		print(i)
 		train, test = split_data(dataframe.values, i)
 
-		pred = predictor.predict(train, cols, parameters, select, time_steps, max_vars, verbosity, parameters_file_name, MAX_EVALS, only_predict, model_file_name)
+		pred = predictor.predict(train, cols, parameters, select, max_vars, verbosity, parameters_file_name, MAX_EVALS, only_predict, model_file_name)
 
 		actual = test[0:time_steps, 0]
 
