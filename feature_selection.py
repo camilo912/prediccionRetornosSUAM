@@ -1,26 +1,35 @@
 import numpy as np
 import pandas as pd
-
-def normalize_data(data, scale=(0,1)):
-	from sklearn.preprocessing import MinMaxScaler
-	scaler = MinMaxScaler(feature_range=scale)
-	scaled = scaler.fit_transform(data)
-	return scaled, scaler
-
-def split_data(series):
-	wall = int(series.shape[0] * 0.8) 
-	train_X = series[:wall, :]
-	test_X = series[wall:-1, :]
-	train_y = series[1:wall+1, 0]
-	test_y = series[wall+1:, 0]
-	return train_X, test_X, train_y, test_y
+import utils
 
 def series_to_supervised(series):
+	"""
+		Función que sirve para pasar la serie al formato de datos y observaciones del próximo tiempo con un solo *lag* o resago de tiempo
+
+		Parámetros:
+		- series -- Arreglo de numpy, los datos a procesar
+
+		Retorna:
+		- x -- Arreglo de numpy, datos para entrenar
+		- y -- Arreglo de numpy, observaciones para comparar las predicciones
+	"""
 	x = series[:-1, :]
 	y = series[1:, 0]
 	return x, y
 
 def select_features_stepwise_forward(dataFrame, n_news=25):
+	"""
+		*stepwise selection* de varaibles, utiliza las importancias de un modelo de random forest para clasificar las mejores variables
+
+		Parámetros:
+		- dataFrame -- *DataFrame* de pandas, datos de todas las varaibles que van a ser seleccionadas
+		- n_news -- Entero, máximo número de variables que vana a ser seleccioandas
+
+		Retorna:
+		NADA
+		(no retorna nada pero escribe las variables seleccioandas en el archivo 'forecast-competition-complete_selected.csv' en el directorio data)
+
+	"""
 	n_features = dataFrame.shape[1]
 
 	# params
@@ -37,7 +46,7 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 		best_importance = 0
 		for ft in missing:
 			fts = fts + [ft]
-			scaled, scaler = normalize_data(dataFrame[fts].values)
+			scaled, scaler = utils.normalize_data(dataFrame[fts].values)
 			x, y = series_to_supervised(scaled)
 			model = RandomForestRegressor()
 			model.fit(x, y)
@@ -55,13 +64,23 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
 def select_features_ga(dataFrame, max_vars, original_cols):
-	import utils
+	"""
+		Algoritmo genético para selección de variables, utiliza maquinas de soporte vectorial con un kernel de función de base radial para seleccionar las mejores variables
+		Este algoritmo es una implementación propia 
+
+		Parámetros:
+		- dataFrame -- *DataFrame* de pandas, datos de todas las varaibles que van a ser seleccionadas
+		- max_vars -- Entero, número máximo de variables a ser seleccionadas
+		- original_cols -- Lista, lista con los nombres de las columnas originales del problema para reconocer las variables seleccionadas
+
+		Retorna:
+		NADA
+		(no retorna nada pero escribe las variables seleccioandas en el archivo 'forecast-competition-complete_selected.csv' en el directorio data)
+	"""
 	import random
 	import time
 	from matplotlib import pyplot as plt
 	from sklearn.metrics import mean_squared_error
-	#from sklearn.ensemble import RandomForestRegressor
-	#from sklearn.linear_model import LinearRegression
 	from sklearn.svm import SVR
 	n_generations = 250
 	n_chars = dataFrame.shape[1]
@@ -84,8 +103,6 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 			cols = columns[villager]
 			df = dataFrame[cols]
 
-			#model = LinearRegression(n_jobs=-1)
-			#model = RandomForestRegressor(n_estimators=100, n_jobs=-1)
 			model = SVR(gamma='scale')
 			#model = SVR(kernel='linear')
 
@@ -148,6 +165,19 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
 def select_features_sa(dataFrame, max_vars, original_cols):
+	"""
+		*simulated annealing* para selección de variables 
+
+		Parámetros:
+		- dataFrame -- *DataFrame* de pandas, datos de todas las varaibles que van a ser seleccionadas
+		- max_vars -- Entero, número máximo de variables a ser seleccionadas
+		- original_cols -- Lista, lista con los nombres de las columnas originales del problema para reconocer las variables seleccionadas
+
+		Retorna:
+		NADA
+		(no retorna nada pero escribe las variables seleccioandas en el archivo 'forecast-competition-complete_selected.csv' en el directorio data)
+
+	"""
 	from simanneal import Annealer
 
 	class Sas(Annealer):
@@ -156,10 +186,16 @@ def select_features_sa(dataFrame, max_vars, original_cols):
 			super(Sas, self).__init__(state)
 
 		def move(self):
+			"""
+				Función que define un paso en el algoritmo
+			"""
 			idx = np.random.randint(0, len(self.state))
 			self.state[idx] = not(self.state[idx])
 
 		def energy(self):
+			"""
+				Función que define la energía o el error del paso
+			"""
 			from sklearn.metrics import mean_squared_error
 			#from sklearn.linear_model import LinearRegression
 			#model = LinearRegression()

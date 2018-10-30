@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module main</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>main</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:d%3A%5Conedrive%20-%20inversiones%20internacionales%20grupo%20sura%20s.a%5Cprediccion_de_retornos%5Cprediccionretornossuam%5Cmain.py">d:\onedrive - inversiones internacionales grupo sura s.a\prediccion_de_retornos\prediccionretornossuam\main.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="csv.html">csv</a><br>
+<a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top><a href="pandas.html">pandas</a><br>
+<a href="matplotlib.pyplot.html">matplotlib.pyplot</a><br>
+</td><td width="25%" valign=top><a href="series_predictor.html">series_predictor</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-main"><strong>main</strong></a>()</dt><dd><tt>Main&nbsp;del&nbsp;proyecto,&nbsp;este&nbsp;archivo&nbsp;no&nbsp;es&nbsp;necesario,&nbsp;puede&nbsp;ser&nbsp;personalizado&nbsp;o&nbsp;incluso&nbsp;crear&nbsp;uno&nbsp;nuevo,&nbsp;este&nbsp;es&nbsp;simplemente&nbsp;el&nbsp;estilo&nbsp;del&nbsp;creador&nbsp;de&nbsp;este&nbsp;proyecto<br>
+&nbsp;<br>
+contien&nbsp;la&nbsp;interacción&nbsp;de&nbsp;un&nbsp;usuario&nbsp;final&nbsp;con&nbsp;el&nbsp;proyecto&nbsp;mediante&nbsp;este&nbsp;archivo&nbsp;se&nbsp;leen&nbsp;los&nbsp;datos&nbsp;de&nbsp;un&nbsp;archivo&nbsp;.csv,&nbsp;se&nbsp;inicializan&nbsp;los&nbsp;hyperparámetros&nbsp;para&nbsp;la&nbsp;ejecución<br>
+se&nbsp;invoca&nbsp;al&nbsp;proyecto&nbsp;para&nbsp;realizar&nbsp;las&nbsp;predicciones&nbsp;y&nbsp;se&nbsp;grafican&nbsp;los&nbsp;resultados<br>
+&nbsp;<br>
+&nbsp;<br>
+####&nbsp;Models&nbsp;ids&nbsp;####<br>
+#&nbsp;0&nbsp;-&gt;&nbsp;LSTM&nbsp;with&nbsp;sliddding&nbsp;window<br>
+#&nbsp;1&nbsp;-&gt;&nbsp;Random&nbsp;Forest....................(only&nbsp;available&nbsp;for&nbsp;1&nbsp;time&nbsp;step)<br>
+#&nbsp;2&nbsp;-&gt;&nbsp;AdaBoost.........................(only&nbsp;available&nbsp;for&nbsp;1&nbsp;time&nbsp;step)<br>
+#&nbsp;3&nbsp;-&gt;&nbsp;SVM..............................(only&nbsp;available&nbsp;for&nbsp;1&nbsp;time&nbsp;step)<br>
+#&nbsp;4&nbsp;-&gt;&nbsp;Arima...........................(only&nbsp;available&nbsp;for&nbsp;1&nbsp;time&nbsp;step)<br>
+#&nbsp;5&nbsp;-&gt;&nbsp;LSTM&nbsp;without&nbsp;slidding&nbsp;windows<br>
+&nbsp;<br>
+Se&nbsp;manjean&nbsp;11&nbsp;hyperparámetros&nbsp;principales<br>
+-&nbsp;model&nbsp;--&nbsp;Entero,&nbsp;el&nbsp;id&nbsp;del&nbsp;modelo&nbsp;que&nbsp;se&nbsp;va&nbsp;a&nbsp;utilizar&nbsp;(ver&nbsp;ids&nbsp;arriba)<br>
+-&nbsp;parameters&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;va&nbsp;a&nbsp;hacer&nbsp;optimzación&nbsp;de&nbsp;parámetros<br>
+-&nbsp;select&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;va&nbsp;a&nbsp;hacer&nbsp;selección&nbsp;de&nbsp;variables<br>
+-&nbsp;original&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar&nbsp;con&nbsp;las&nbsp;variables&nbsp;originales&nbsp;o&nbsp;con&nbsp;las&nbsp;variables&nbsp;seleccionadas,&nbsp;True&nbsp;es&nbsp;con&nbsp;las&nbsp;originales&nbsp;(si&nbsp;select&nbsp;es&nbsp;True&nbsp;este&nbsp;es&nbsp;False&nbsp;automaticamente)<br>
+-&nbsp;time_steps&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;tiempos&nbsp;en&nbsp;el&nbsp;futuro&nbsp;que&nbsp;se&nbsp;van&nbsp;a&nbsp;predecir<br>
+-&nbsp;max_vars&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;máximo&nbsp;de&nbsp;variables&nbsp;a&nbsp;ser&nbsp;seleccionadas&nbsp;por&nbsp;el&nbsp;algoritmo&nbsp;de&nbsp;selección&nbsp;de&nbsp;variables,&nbsp;si&nbsp;select&nbsp;es&nbsp;False,&nbsp;este&nbsp;parámetro&nbsp;no&nbsp;importa<br>
+-&nbsp;verbosity&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;que&nbsp;indica&nbsp;el&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución,&nbsp;hasta&nbsp;2&nbsp;muestra&nbsp;gráficas,&nbsp;de&nbsp;ahí&nbsp;para&nbsp;arriba&nbsp;muestra&nbsp;*logs*&nbsp;de&nbsp;la&nbsp;ejecución<br>
+-&nbsp;parameters_file_name&nbsp;--&nbsp;String,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;va&nbsp;a&nbsp;guardar&nbsp;o&nbsp;cargar&nbsp;el&nbsp;modelo&nbsp;entrenado,&nbsp;si&nbsp;este&nbsp;parámetro&nbsp;es&nbsp;None,&nbsp;se&nbsp;utilzian&nbsp;los&nbsp;parámetros&nbsp;por&nbsp;*default*<br>
+-&nbsp;MAX_EVALS&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;iteraciones&nbsp;de&nbsp;la&nbsp;optimización&nbsp;bayesiana,&nbsp;si&nbsp;parameters&nbsp;es&nbsp;False&nbsp;este&nbsp;parámetro&nbsp;no&nbsp;importa<br>
+-&nbsp;only_predict&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;solo&nbsp;se&nbsp;va&nbsp;a&nbsp;predecir&nbsp;o&nbsp;tambien&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar&nbsp;el&nbsp;modelo<br>
+-&nbsp;model_file_name&nbsp;--&nbsp;String,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;va&nbsp;a&nbsp;guardar&nbsp;y/o&nbsp;cargar&nbsp;el&nbsp;modelo&nbsp;entrenado,&nbsp;si&nbsp;only_predict&nbsp;es&nbsp;False&nbsp;este&nbsp;parámetro&nbsp;no&nbsp;importa<br>
+&nbsp;<br>
+Hay&nbsp;1&nbsp;hyperparámetro&nbsp;adicional&nbsp;que&nbsp;es:<br>
+-&nbsp;predicting&nbsp;--&nbsp;Entero,&nbsp;id&nbsp;de&nbsp;la&nbsp;columna&nbsp;dentro&nbsp;del&nbsp;dataframe&nbsp;de&nbsp;la&nbsp;variable&nbsp;objetivo&nbsp;a&nbsp;predecir,&nbsp;para&nbsp;que&nbsp;en&nbsp;el&nbsp;caso&nbsp;que&nbsp;esta&nbsp;no&nbsp;sea&nbsp;la&nbsp;posición&nbsp;0,&nbsp;se&nbsp;intercambie</tt></dd></dl>
+ <dl><dt><a name="-split_data"><strong>split_data</strong></a>(data, separator)</dt></dl>
+</td></tr></table>
+</body></html>

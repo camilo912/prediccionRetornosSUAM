@@ -9,6 +9,10 @@ from timeit import default_timer as timer
 
 
 class Predictor():
+	"""
+		Clase para crear los modelos, entrenarlos y predecir con ellos, en general es la clase principal y mediante esta se interactua con los modelos.
+
+	"""
 	def __init__(self, id_model, original, time_steps):
 		self.id_model = id_model
 		self.original = original
@@ -51,6 +55,26 @@ class Predictor():
 
 
 	def predict(self, data, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, only_predict=False, model_file_name=None):
+		"""
+		Función que recibe como entrada los datos de entrenamiento junto con los parámetros y retorna las predicciones a los *timesteps* especificados.
+
+		Parámetros:
+		- data -- arreglo de numpy con los datos de entrenamiento con la serie a predecir en la primera posición
+		- original_cols -- lista que contiene los nombres de las variables originales, para mantener los nombres cuando se seleccionan variables
+		- tune -- *booleano* o entero que define si se hace tuning de parametros
+		- select -- *booleano* o entero que defien si se hace selección de variables
+		- max_vars -- entero que denota la cantidad maxima de variables a seleccionar a la hora de hacer selección de variables
+		- verbosity -- entero que denota el nivel de verbosidad de la ejecución, entre más alto más graficos o información se mostrará (tiene un límite diferente para cada algoritmo)
+		- parameters_file_name -- *string* que contien el nomrbe del archivo con los parametros a leer, si no se especifica se ejecutara con los parámetros por *default*
+		- max_evals -- entero con la cantidad de ejecuciones a la hora de hacer tuning de parámetros, si no se especifica es 100
+		- only_predict -- *booleano* que denota si solo se quiere predecir utilizando un modelo previamente entrenado, si no se especifica es *false*
+		- model_file_name -- *string* con el nombre del archivo que contiene el model oque se quiere leer para solamente hacer las predicciones
+
+		Retorna:
+		- last -- Arreglo de numpy | Lista | Entero, predicciones de los últimos valores dados, predicciones *out of sample*
+
+		"""
+
 		if(select):
 			self.original = 0
 			# feature selection
@@ -199,7 +223,7 @@ class Predictor():
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(values)
-				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, scaler, 
 																				last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 
 				print('rmse: %s ' % rmse)
@@ -395,7 +419,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.split_data(values)
 				start = timer()
-				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, -1, scaler, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_epochs, self.lr, n_features, scaler, 
 																				last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 				

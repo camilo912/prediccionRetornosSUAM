@@ -18,6 +18,17 @@ from timeit import default_timer as timer
 ID_TO_MODELNAME = {0:'lstm', 1:'randomForest', 2:'adaBoost', 3:'svm', 4:'arima', 5:'lstmNoSW'}
 
 def normalize_data(values, scale=(-1,1)):
+	"""
+		Función para normalizar los datos, es decir, escalarlos en una escala que por *default* es [-1, 1]
+
+		Parámetros:
+		- values -- Arreglo de numpy, los datos
+		- scaler -- Tupla de 2 valores, escala a la cual se quiere escalar los datos
+
+		Retorna:
+		- scaled -- Arreglo de numpy, los datos escalados
+		- scaler -- Instancia de MinMaxScaler, para luego revertir el proceso de escalamiento
+	"""
 	# Be sure all values are numbers
 	values = values.astype('float32')
 	# scale the data
@@ -26,6 +37,20 @@ def normalize_data(values, scale=(-1,1)):
 	return scaled, scaler
 
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
+	"""
+		Función que convierte la serie de tiempo en datos supervisados para el modelo, es decir cambia el formato de (número de ejemplos, número de *features*) 
+		por (número de ejemplos, número de *lags*, número de *features*)
+
+		Parámetros:
+		- data -- Arreglo de numpy, la serie completa de los datos
+		- n_in -- Entero, número de *lags* o resagos de tiempo, *default* es 1
+		- n_out -- Entero, número de *time steps* a predecir en el futuro, *default* es 1
+		- dropnan -- Booleano, indica si se eliminan los valores de Nan del *dataframe* resultante
+
+		Retorna:
+		- agg -- *Dataframe* de pandas, *dataframe* con todas las variables en el nuevo formato, sus nombres de columnas son del tipo: "var3(t+2)"
+
+	"""
 	n_vars = 1 if type(data) is list else data.shape[1]
 	df = pd.DataFrame(data)
 	cols, names = list(), list()
@@ -50,6 +75,23 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 
 # For no slidding window approach
 def split_data(data):
+	"""
+		Función para dividir la serie de datos en entrenamiento, validación y *testing* sin el concepto de *lags* adicionalmente retorna los ultimos valores para la predicción. 
+		Esta función solo es utilizada por el modelo LSTM sin el concepto de ventana deslizante
+
+		Parámetros:
+		- data -- Arreglo de numpy, los datos
+
+		Retorna:
+		- X_train -- Arreglo de numpy, datos de entrenamiento
+		- X_val -- Arreglo de numpy, datos de validación
+		- X_test -- Arreglo de numpy, datos de *testing*
+		- y_train -- Arreglo de numpy, observaciones de tiempos futuros de entrenamiento
+		- y_val -- Arreglo de numpy, observaciones de tiempos futuros de validación
+		- y_test -- Arreglo de numpy, observaciones de tiempos futuros de *testing
+		- last_values -- Arreglo de numpy, últimos datos apra hacer la predicción *out of sample*
+
+	"""
 	n_train = int(len(data)*0.6)
 	n_val = int(len(data)*0.2)
 	ys = data[1:, 0]
@@ -63,6 +105,27 @@ def split_data(data):
 	return X_train, X_val, X_test, y_train, y_val, y_test, last_values
 
 def transform_values(data, n_lags, n_series, dim):
+	"""
+		Función para preprocesar la serie de entrada, primero le cambia el formato a (número de ejemplos, número de *lags*, número de *features*), luego divide estos datos en 
+		entrenamiento, validación y *testing* adicionalmente retorna los ultimos valores para la predicción.
+
+		Parámetros:
+		- data -- Arreglo de numpy, serie de observaciones ordenada según orden cronológico
+		- n_lags -- Entero, el número de *lags* que se usaran para entrenar
+		- n_series -- Entero, el número de *time steps* a predecir en el futuro
+		- dim -- Booleano, denota si se reformatea los valores de enrtenamiento resultantes, es decir si se cambia el formato de (número de ejemplos, número de *lags* X número de *features*) a (número de ejemplos, número de *lags*, número de *features*)
+
+		Retorna:
+		- train_X -- Arreglo de numpy, datos de entrenamiento
+		- val_X -- Arreglo de numpy, datos de valdiación
+		- test_X -- Arreglo de numpy, datos de *testing*
+		- train_y -- Arreglo de numpy, observaciones de tiempos futuros de entrenamiento
+		- val_y -- Arreglo de numpy, observaciones de tiempos futuros de validación
+		- test_y -- Arreglo de numpy, observaciones de tiempos futuros de *testing
+		- last_values -- Arreglo de numpy, últimos datos apra hacer la predicción *out of sample*
+
+
+	"""
 	train_size = 0.6
 	val_size =0.2
 	test_size = 0.2
@@ -104,6 +167,18 @@ def transform_values(data, n_lags, n_series, dim):
 
 
 def plot_data(data, labels, title):
+	"""
+		Función para graficar los datos resultantes, solo sirve para las predicciones a 1 *time step*
+
+		Parámetros:
+		- data -- Lista de dos valores, lista con las predicciones y las observaciones
+		- labels -- Lista de dos valores, lista con las etiquetas de los datos para mostrar en el gráfico
+		- title -- String, título del gráfico
+
+		Retorna:
+		NADA
+
+	"""
 	plt.figure()
 	for i in range(len(data)):
 		plt.plot(data[i], label=labels[i])
@@ -111,17 +186,21 @@ def plot_data(data, labels, title):
 	plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=2)
 	plt.show()
 
-def plot_data_lagged(data, labels, title):
-	plt.figure()
-	plt.plot(data[0], label=labels[0])
-	for i in range(len(data[1])):
-		padding = [None for _ in range(i)]
-		plt.plot(padding + list(data[1][i]), label=labels[1] + str(i+1))
-	plt.suptitle(title, fontsize=16)
-	plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=2)
-	plt.show()
-
 def plot_data_lagged_blocks(data, labels, title):
+	"""
+		Función para graficar los datos resultantes, sirve más que todo para las predicciones a más de un *time step*. Lo que hace es ponerle un *padding* a las predicciones
+		para que queden en el tiempo que están prediciendo, es decir, si *time steps* es 10, la priemra predicción se hara para el tiempo 0 y tendrá las predicciones hasta el
+		tiempo 9, la segunda apredicción se hará en el tiempo 10 y tendra las predicciones del tiempo 10 al 19, etc.
+
+		Parámetros:
+		- data -- Lista de dos valores, lista con las predicciones y las observaciones, es necesario que la priemra posición sean las observaciones y la segunda las predicciones
+		- labels -- Lista de dos valores, lista con las etiquetas de los datos para mostrar en el gráfico
+		- title -- String, título del gráfico
+
+		Retorna:
+		NADA
+	
+	"""
 	plt.figure()
 	plt.plot(data[0], label=labels[0])
 	for i in range(0, len(data[1]), len(data[1][0])):
@@ -132,6 +211,16 @@ def plot_data_lagged_blocks(data, labels, title):
 	plt.show()
 
 def diff(values):
+	"""
+		Función que sirve para diferenciar una serie
+	
+		Parámetros:
+		- values -- Arreglo de numpy | lista, serie que va a ser diferenciada 
+
+		Retorna:
+		- new -- Lista, lista con la serie diferenciada
+
+	"""
 	new = np.zeros(len(values)-1)
 	for i in range(len(new)):
 		new[i] = values[i+1] - values[i]
@@ -139,6 +228,18 @@ def diff(values):
 
 
 def calculate_diff_level_for_stationarity(values, scaler, maxi):
+	"""	
+		Función que sirve para calcular el nivel de diferenciación necesario para que una serie sea estacionaria
+		
+		Parámetros:
+		- values -- Arreglo de numpy, serie sobre la cual se va a calcular el nivel de diferenciación
+		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para revertir el escalamiento de la serie
+		- maxi -- Entero, valor maximo de diferenciación permitido, si se llega a este limite y la serie no es estacionaria se devolverá maxi como el nivel de diferenciación
+
+		Retorna:
+		- maxi | i -- Entero, minimo nivel de diferenciación para que la serie sea estacionaria, o maximo número en el que se diferencio en el caso de que la serie no se logro poner estacionaria
+
+	"""
 	from statsmodels.tsa.stattools import adfuller
 
 	real_values = scaler.inverse_transform(values)
@@ -153,6 +254,25 @@ def calculate_diff_level_for_stationarity(values, scaler, maxi):
 
 # for bayes optimization
 def objective(params, values, scaler, n_series, id_model, n_features, verbosity, model_file_name, MAX_EVALS):
+	"""
+		Función objetivo que sirve para la optimización bayesiana, sirve para ejecuar el modelo con los parámetros recibidos, calcular el error de esta ejecución y así decidir
+		cuales parámetros son mejores.
+
+		Parámetros:
+		- params -- Diccionario, contien los parametros para la ejecución, estos parámetros son dados por la libreria de optimización bayesiana (hyperopt) dentro de un espacio previamente definido
+		- values -- Arreglo de numpy, datos con los cuales se va a entrenar el modelo, es decir, la serie previamente preprocesada
+		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para el escalamiento de los datos y para revertir este escalamiento
+		- n_series -- Entero, número de *time steps*
+		- id_model -- Entero, id del modelo que se va a entrenar
+		- n_features -- Entero, número de *features* de la serie
+		- verbosity -- Entero, nivel de verbosidad de la ejecución
+		- model_file_name -- String, nombre del archivo donde se guardará y/o se cargará el modelo entrenado
+		- MAX_EVALS -- Entero, número máximo  de iteraciones de la optimización bayesiana, en esta función sirve para identificar el archivo de salida en el directorio trials
+
+		Retorna:
+		- diccionario -- Diccioanrio, diccionario que contiene el rmse, los parámetros, la iteración, el tiempo de ejecución y el esatdo de la ejecución. Todo esto es necesario para la libreria
+
+	"""
 	
 	# Keep track of evals
 	global ITERATION
@@ -263,6 +383,25 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 			'train_time': run_time, 'status': STATUS_OK}
 
 def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name):
+	"""
+		Función para encontrar los parámetros optimos para un modelo
+
+		Parámetros:
+		- id_model -- Entero, id del modelo que se va a entrenar
+		- MAX_EVALS -- Entero, número máximo  de iteraciones de la optimización bayesiana
+		- values -- Arreglo de numpy, datos con los cauales se va a entrenar el modelo, es decir, la serie previamente preprocesada
+		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para el escalamiento de los datos y para revertir este escalamiento
+		- n_features -- Entero, número de *features* de la serie
+		- n_series -- Entero, número de *time steps*
+		- original -- Booleano, denota si se van a usar los *features* originales de la serie o los *features* seleccionados, en esta función sirve para identificar el archivo de salida
+		- verbosity -- Entero, nivel de verbosidad de la ejecución
+		- model_file_name -- String, nombre del archivo donde se guardará y/o se cargará el modelo entrenado
+
+		Retorna: 
+		- best -- Diccionario, diccionario con los mejores parámetros encontrados en la optimización bayesiana
+		- bayes_trails_results -- Lista, Lista con los resultados de todas las iteraciones del proceso ordenadas según el rmse
+
+	"""
 	global ITERATION
 	ITERATION = 0
 

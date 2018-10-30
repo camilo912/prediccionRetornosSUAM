@@ -1,0 +1,69 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module feature_selection</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>feature_selection</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:d%3A%5Conedrive%20-%20inversiones%20internacionales%20grupo%20sura%20s.a%5Cprediccion_de_retornos%5Cprediccionretornossuam%5Cfeature_selection.py">d:\onedrive - inversiones internacionales grupo sura s.a\prediccion_de_retornos\prediccionretornossuam\feature_selection.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top><a href="pandas.html">pandas</a><br>
+</td><td width="25%" valign=top><a href="utils.html">utils</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-select_features_ga"><strong>select_features_ga</strong></a>(dataFrame, max_vars, original_cols)</dt><dd><tt>Algoritmo&nbsp;genético&nbsp;para&nbsp;selección&nbsp;de&nbsp;variables,&nbsp;utiliza&nbsp;maquinas&nbsp;de&nbsp;soporte&nbsp;vectorial&nbsp;con&nbsp;un&nbsp;kernel&nbsp;de&nbsp;función&nbsp;de&nbsp;base&nbsp;radial&nbsp;para&nbsp;seleccionar&nbsp;las&nbsp;mejores&nbsp;variables<br>
+Este&nbsp;algoritmo&nbsp;es&nbsp;una&nbsp;implementación&nbsp;propia&nbsp;<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;dataFrame&nbsp;--&nbsp;*DataFrame*&nbsp;de&nbsp;pandas,&nbsp;datos&nbsp;de&nbsp;todas&nbsp;las&nbsp;varaibles&nbsp;que&nbsp;van&nbsp;a&nbsp;ser&nbsp;seleccionadas<br>
+-&nbsp;max_vars&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;máximo&nbsp;de&nbsp;variables&nbsp;a&nbsp;ser&nbsp;seleccionadas<br>
+-&nbsp;original_cols&nbsp;--&nbsp;Lista,&nbsp;lista&nbsp;con&nbsp;los&nbsp;nombres&nbsp;de&nbsp;las&nbsp;columnas&nbsp;originales&nbsp;del&nbsp;problema&nbsp;para&nbsp;reconocer&nbsp;las&nbsp;variables&nbsp;seleccionadas<br>
+&nbsp;<br>
+Retorna:<br>
+NADA<br>
+(no&nbsp;retorna&nbsp;nada&nbsp;pero&nbsp;escribe&nbsp;las&nbsp;variables&nbsp;seleccioandas&nbsp;en&nbsp;el&nbsp;archivo&nbsp;'forecast-competition-complete_selected.csv'&nbsp;en&nbsp;el&nbsp;directorio&nbsp;data)</tt></dd></dl>
+ <dl><dt><a name="-select_features_sa"><strong>select_features_sa</strong></a>(dataFrame, max_vars, original_cols)</dt><dd><tt>*simulated&nbsp;annealing*&nbsp;para&nbsp;selección&nbsp;de&nbsp;variables&nbsp;<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;dataFrame&nbsp;--&nbsp;*DataFrame*&nbsp;de&nbsp;pandas,&nbsp;datos&nbsp;de&nbsp;todas&nbsp;las&nbsp;varaibles&nbsp;que&nbsp;van&nbsp;a&nbsp;ser&nbsp;seleccionadas<br>
+-&nbsp;max_vars&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;máximo&nbsp;de&nbsp;variables&nbsp;a&nbsp;ser&nbsp;seleccionadas<br>
+-&nbsp;original_cols&nbsp;--&nbsp;Lista,&nbsp;lista&nbsp;con&nbsp;los&nbsp;nombres&nbsp;de&nbsp;las&nbsp;columnas&nbsp;originales&nbsp;del&nbsp;problema&nbsp;para&nbsp;reconocer&nbsp;las&nbsp;variables&nbsp;seleccionadas<br>
+&nbsp;<br>
+Retorna:<br>
+NADA<br>
+(no&nbsp;retorna&nbsp;nada&nbsp;pero&nbsp;escribe&nbsp;las&nbsp;variables&nbsp;seleccioandas&nbsp;en&nbsp;el&nbsp;archivo&nbsp;'forecast-competition-complete_selected.csv'&nbsp;en&nbsp;el&nbsp;directorio&nbsp;data)</tt></dd></dl>
+ <dl><dt><a name="-select_features_stepwise_forward"><strong>select_features_stepwise_forward</strong></a>(dataFrame, n_news=25)</dt><dd><tt>*stepwise&nbsp;selection*&nbsp;de&nbsp;varaibles,&nbsp;utiliza&nbsp;las&nbsp;importancias&nbsp;de&nbsp;un&nbsp;modelo&nbsp;de&nbsp;random&nbsp;forest&nbsp;para&nbsp;clasificar&nbsp;las&nbsp;mejores&nbsp;variables<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;dataFrame&nbsp;--&nbsp;*DataFrame*&nbsp;de&nbsp;pandas,&nbsp;datos&nbsp;de&nbsp;todas&nbsp;las&nbsp;varaibles&nbsp;que&nbsp;van&nbsp;a&nbsp;ser&nbsp;seleccionadas<br>
+-&nbsp;n_news&nbsp;--&nbsp;Entero,&nbsp;máximo&nbsp;número&nbsp;de&nbsp;variables&nbsp;que&nbsp;vana&nbsp;a&nbsp;ser&nbsp;seleccioandas<br>
+&nbsp;<br>
+Retorna:<br>
+NADA<br>
+(no&nbsp;retorna&nbsp;nada&nbsp;pero&nbsp;escribe&nbsp;las&nbsp;variables&nbsp;seleccioandas&nbsp;en&nbsp;el&nbsp;archivo&nbsp;'forecast-competition-complete_selected.csv'&nbsp;en&nbsp;el&nbsp;directorio&nbsp;data)</tt></dd></dl>
+ <dl><dt><a name="-series_to_supervised"><strong>series_to_supervised</strong></a>(series)</dt><dd><tt>Función&nbsp;que&nbsp;sirve&nbsp;para&nbsp;pasar&nbsp;la&nbsp;serie&nbsp;al&nbsp;formato&nbsp;de&nbsp;datos&nbsp;y&nbsp;observaciones&nbsp;del&nbsp;próximo&nbsp;tiempo&nbsp;con&nbsp;un&nbsp;solo&nbsp;*lag*&nbsp;o&nbsp;resago&nbsp;de&nbsp;tiempo<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;series&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;los&nbsp;datos&nbsp;a&nbsp;procesar<br>
+&nbsp;<br>
+Retorna:<br>
+-&nbsp;x&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;datos&nbsp;para&nbsp;entrenar<br>
+-&nbsp;y&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;observaciones&nbsp;para&nbsp;comparar&nbsp;las&nbsp;predicciones</tt></dd></dl>
+</td></tr></table>
+</body></html>
