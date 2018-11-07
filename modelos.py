@@ -5,6 +5,7 @@ import numpy as np
 import math
 
 def calculate_rmse(n_series, n_features, n_lags, X, y, scaler, model):
+	import utils
 	"""
 		
 		Función para calcular la raíz del error cuadrático medio, solo es utilizado por los algoritmos:
@@ -31,28 +32,30 @@ def calculate_rmse(n_series, n_features, n_lags, X, y, scaler, model):
 
 	"""
 	yhat = model.predict(X)
-	Xs = np.ones((X.shape[0], n_lags * n_features))
-	yhat = yhat.reshape(-1, n_series)
-	inv_yhats = []
-	for i in range(n_series):
-		inv_yhat = np.concatenate((Xs[:, -(n_features - 1):], yhat[:, i].reshape(-1, 1)), axis=1)
-		inv_yhat = scaler.inverse_transform(inv_yhat)
+	# Xs = np.ones((X.shape[0], n_lags * n_features))
+	# yhat = yhat.reshape(-1, n_series)
+	# inv_yhats = []
+	# for i in range(n_series):
+	# 	inv_yhat = np.concatenate((Xs[:, -(n_features - 1):], yhat[:, i].reshape(-1, 1)), axis=1)
+	# 	inv_yhat = scaler.inverse_transform(inv_yhat)
 
-		inv_yhat = inv_yhat[:, -1]
-		inv_yhats.append(inv_yhat)
+	# 	inv_yhat = inv_yhat[:, -1]
+	# 	inv_yhats.append(inv_yhat)
 
-	inv_yhat = np.array(inv_yhats).T
+	# inv_yhat = np.array(inv_yhats).T
+	inv_yhat = utils.inverse_transform(yhat, scaler, n_features)
 	
 	# invert scaling for actual
-	y = y.reshape((len(y), n_series))
-	inv_ys = []
-	for i in range(n_series):
-		inv_y = np.concatenate((Xs[:, -(n_features - 1):], y[:, i].reshape(-1, 1)), axis=1)
-		inv_y = scaler.inverse_transform(inv_y)
-		inv_y = inv_y[:,-1]
-		inv_ys.append(inv_y)
+	# y = y.reshape((len(y), n_series))
+	# inv_ys = []
+	# for i in range(n_series):
+	# 	inv_y = np.concatenate((Xs[:, -(n_features - 1):], y[:, i].reshape(-1, 1)), axis=1)
+	# 	inv_y = scaler.inverse_transform(inv_y)
+	# 	inv_y = inv_y[:,-1]
+	# 	inv_ys.append(inv_y)
 
-	inv_y = np.array(inv_ys).T
+	# inv_y = np.array(inv_ys).T
+	inv_y = utils.inverse_transform(y, scaler, n_features)
 
 	# calculate RMSE	
 	rmse = math.sqrt(mean_squared_error(inv_y, inv_yhat))
@@ -108,8 +111,8 @@ def weighted_mse(yTrue, yPred):
 		- valor -- error cuadrático medio ponderado
 	"""
 	from keras import backend as K
-	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (10,)
-	idx = K.cumsum(ones) # similar to a 'range(1,11)'
+	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (n_series,)
+	idx = K.cumsum(ones) # similar to a 'range(1,n_series+1)'
 
 	return K.mean((1/idx)*K.square(yTrue-yPred))
 
@@ -155,7 +158,8 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 	
 	if(not only_predict):
 		print('training...')
-		from keras.layers import Dense, Activation, Dropout, LSTM
+
+		from keras.layers import Dense, Dropout, LSTM
 		from keras.models import Sequential
 		from keras.optimizers import Adam
 		from keras import backend as K
@@ -166,10 +170,26 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		verbose = verbose_dict[verbose]
 
 		model = Sequential()
-		model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
-		model.add(Dense(n_out, input_shape=(n_hidden,)))
+		if(n_series == 1):
+			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True))
+			model.add(Dropout(0.25))
+			model.add(LSTM(n_hidden))
+			model.add(Dropout(0.75))
+			model.add(Dense(n_out))
+		else:
+			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True))
+			model.add(Dropout(0.5))
+			model.add(Dense(n_hidden, activation='relu'))
+			model.add(Dropout(0.5))
+			model.add(LSTM(n_hidden, return_sequences=True))
+			model.add(Dropout(0.5))
+			model.add(Dense(n_hidden, activation='relu'))
+			model.add(Dropout(0.5))
+			model.add(LSTM(n_hidden))
+			model.add(Dropout(0.5))
+			model.add(Dense(n_out))
 
-		opt = Adam(lr=0.001, decay=0.0)
+		opt = Adam(lr=0.001)#, decay=0.0)
 		model.compile(loss=weighted_mse, optimizer=opt)
 		# model.compile(loss=lambda yTrue, yPred: K.mean((1/K.cumsum(K.ones_like(yTrue[0,:])))*K.square(yTrue-yPred)), optimizer=opt)
 		# model.compile(loss='mse', optimizer=opt)
@@ -189,8 +209,8 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		# for validation
 		rmses_val = []
 		rmse_val = 0
-		weigth = 1.0
-		step = 0.1
+		#weigth = 1.0
+		#step = 0.1
 		for i in range(n_out):
 			tmp = np.zeros((len(y_hat_val[:, i].ravel()), n_features))
 			tmp[:, 0] = y_hat_val[:, i].ravel()
@@ -201,8 +221,9 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			val_y[:, i] = scaler.inverse_transform(tmp)[:, 0]
 
 			rmses_val.append(math.sqrt(mean_squared_error(val_y[:, i], y_hat_val[:, i])))
-			rmse_val += rmses_val[-1]*weigth
-			weigth -= step
+			#rmse_val += rmses_val[-1]*weigth
+			#weigth -= step
+		rmse_val = np.mean(rmses_val)
 	else:
 		rmse_val = None
 
@@ -210,8 +231,8 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		# for test
 		rmses = []
 		rmse = 0
-		weigth = 1.5
-		step = 0.1
+		#weigth = 1.5
+		#step = 0.1
 		for i in range(n_out):
 			tmp = np.zeros((len(y_hat_test[:, i].ravel()), n_features))
 			tmp[:, 0] = y_hat_test[:, i].ravel()
@@ -222,8 +243,9 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			test_y[:, i] = scaler.inverse_transform(tmp)[:, 0]
 
 			rmses.append(math.sqrt(mean_squared_error(test_y[:, i], y_hat_test[:, i])))
-			rmse += rmses[-1]*weigth
-			weigth -= step
+			#rmse += rmses[-1]*weigth
+			#weigth -= step
+		rmse = np.mean(rmses)
 	else:
 		rmse = None
 
@@ -336,8 +358,8 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 		# for validation
 		rmses_val = []
 		rmse_val = 0
-		weigth = 1.5
-		step = 0.1
+		#weigth = 1.5
+		#step = 0.1
 		for i in range(n_out):
 			tmp = np.zeros((len(preds_val[:, i].ravel()), n_features))
 			tmp[:, 0] = preds_val[:, i].ravel()
@@ -348,8 +370,9 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 			obs_val[:, i] = scaler.inverse_transform(tmp)[:, 0]
 
 			rmses_val.append(math.sqrt(mean_squared_error(obs_val[:, i], preds_val[:, i])))
-			rmse_val += rmses_val[-1]*weigth
-			weigth -= step
+			#rmse_val += rmses_val[-1]*weigth
+			#weigth -= step
+		rmse_val = np.mean(rmses_val)
 	else:
 		rmse_val, preds_val, obs_val = None, None, None
 
@@ -379,8 +402,8 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 		# for test
 		rmses = []
 		rmse = 0
-		weigth = 1.5
-		step = 0.1
+		#weigth = 1.5
+		#step = 0.1
 		for i in range(n_out):
 			tmp = np.zeros((len(preds_test[:, i].ravel()), n_features))
 			tmp[:, 0] = preds_test[:, i].ravel()
@@ -391,8 +414,9 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 			obs_test[:, i] = scaler.inverse_transform(tmp)[:, 0]
 
 			rmses.append(math.sqrt(mean_squared_error(obs_test[:, i], preds_test[:, i])))
-			rmse += rmses[-1]*weigth
-			weigth -= step
+			#rmse += rmses[-1]*weigth
+			#weigth -= step
+		rmse = np.mean(rmses)
 	else:
 		rmse = None
 

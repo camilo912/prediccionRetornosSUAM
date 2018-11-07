@@ -26,10 +26,16 @@ class Predictor():
 				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 17, 88, 41
 		
 		elif(self.id_model == 1 and time_steps == 1):
-			self.n_lags, self.n_estimators, self.max_features, self.min_samples = 4, 762, 18, 3 # for selected features
+			if(self.original):
+				self.n_lags, self.n_estimators, self.max_features, self.min_samples = 4, 762, 18, 3 # for selected features
+			else:
+				self.n_lags, self.n_estimators, self.max_features, self.min_samples = 6, 80, 12, 4
 		
 		elif(self.id_model == 2 and time_steps == 1):
-			self.n_lags, self.n_estimators, self.lr, self.max_depth = 4, 808, 0.33209425848535884, 3
+			if(self.original):
+				self.n_lags, self.n_estimators, self.lr, self.max_depth = 4, 808, 0.33209425848535884, 3
+			else:
+				self.n_lags, self.n_estimators, self.lr, self.max_depth = 5, 916, 0.6378995385153448, 4
 		
 		elif(self.id_model == 3 and time_steps == 1):
 			self.n_lags = 4
@@ -136,7 +142,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
 				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.max_features, self.min_samples, 
-																		n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
+																		n_features, self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 				
 				print('rmse: %s ' % rmse)
 
@@ -157,7 +163,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
 				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, self.n_estimators, self.lr, self.max_depth, n_features, 
-																	self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity)
+																	self.n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name)
 
 				print('rmse: %s ' % rmse)
 
@@ -178,7 +184,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, n_series, 0)
 				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, self.n_lags, scaler, last_values, calc_val_error, 
-															calc_test_error, verbosity)
+															calc_test_error, verbosity, only_predict, model_file_name)
 				
 				print('rmse: %s ' % rmse)
 
@@ -202,7 +208,7 @@ class Predictor():
 				train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last = modelos.model_arima(train, val, [], [], [], test, n_series, self.d, self.q, n_features, self.n_lags, scaler, last_values, calc_val_error, 
-																calc_test_error, verbosity)
+																calc_test_error, verbosity, only_predict, model_file_name)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)

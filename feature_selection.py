@@ -138,7 +138,7 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 		# Mutation
 		for i in range(len(cross_over)):
 			for j in range(n_chars):
-				if(np.random.rand() < 1.0/n_chars):
+				if(np.random.rand() < 5.0/n_chars):
 					cross_over[i][j] = not(cross_over[i][j])
 
 		# Max vars trim

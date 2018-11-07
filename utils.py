@@ -17,6 +17,17 @@ from timeit import default_timer as timer
 
 ID_TO_MODELNAME = {0:'lstm', 1:'randomForest', 2:'adaBoost', 3:'svm', 4:'arima', 5:'lstmNoSW'}
 
+def inverse_transform(data, scaler, n_features):
+	data = data.copy()
+	assert type(data) == np.ndarray
+	if(data.ndim == 1): data = data.reshape(-1, 1)
+	assert data.ndim == 2
+	for i in range(data.shape[1]):
+		tmp = np.zeros((data.shape[0], n_features))
+		tmp[:, 0] = data[:, i]
+		data[:, i] = scaler.inverse_transform(tmp)[:, 0]
+	return data
+
 def normalize_data(values, scale=(-1,1)):
 	"""
 		Función para normalizar los datos, es decir, escalarlos en una escala que por *default* es [-1, 1]
@@ -295,7 +306,8 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
 		rmse, rmse_val, _, _, _, _, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
 														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
-		rmse = rmse*0.7 + rmse_val*0.3
+		# rmse = rmse*0.7 + rmse_val*0.3
+		rmse = rmse_val
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -310,7 +322,8 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
 		rmse, rmse_val, _, _, _, _, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
 																n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
-		rmse = rmse*0.7 + rmse_val*0.3
+		# rmse = rmse*0.7 + rmse_val*0.3
+		rmse = rmse_val
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -324,7 +337,8 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
 		rmse, rmse_val, _, _, _, _, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
 															params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
-		rmse = rmse*0.7 + rmse_val*0.3
+		# rmse = rmse*0.7 + rmse_val*0.3
+		rmse = rmse_val
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -338,7 +352,8 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
 		rmse, rmse_val, _, _, _, _, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
 													verbosity, False, None, model_file_name)
-		rmse = rmse*0.7 + rmse_val*0.3
+		# rmse = rmse*0.7 + rmse_val*0.3
+		rmse = rmse_val
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -354,7 +369,8 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
 		rmse, rmse_val, _, _, _, _, _ = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
 														calc_test_error, verbosity, False, model_file_name)
-		rmse = rmse*0.7 + rmse_val*0.3
+		# rmse = rmse*0.7 + rmse_val*0.3
+		rmse = rmse_val
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -367,7 +383,8 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(values)
 		rmse, rmse_val, _, _, _, _, _ = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, 
 																		last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
-		rmse = rmse*0.7 + rmse_val*0.3
+		# rmse = rmse*0.7 + rmse_val*0.3
+		rmse = rmse_val
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -415,7 +432,7 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	elif(id_model == 1):
 		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
 				'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
-				'max_features': hp.quniform('max_features', 1, 50, 1),
+				'max_features': hp.quniform('max_features', 1, n_features, 1),
 				'min_samples': hp.quniform('min_samples', 1, 20, 1)}
 	elif(id_model == 2):
 		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
