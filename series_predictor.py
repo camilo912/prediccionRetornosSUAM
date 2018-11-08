@@ -20,10 +20,13 @@ class Predictor():
 		if(self.id_model == 0 and time_steps > 0):
 			if(self.original):
 				self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28 
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 26, 181, 39, 3
 			else:
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 7, 288, 65 # 15, 91, 24, 2
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 51, 21, 108, 35
 				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 17, 88, 41
+				#self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 47, 188, 41
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 47, 188, 41
 		
 		elif(self.id_model == 1 and time_steps == 1):
 			if(self.original):
