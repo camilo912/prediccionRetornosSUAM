@@ -63,6 +63,16 @@ Parámetros:<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;new&nbsp;--&nbsp;Lista,&nbsp;lista&nbsp;con&nbsp;la&nbsp;serie&nbsp;diferenciada</tt></dd></dl>
+ <dl><dt><a name="-get_direction_accuracy"><strong>get_direction_accuracy</strong></a>(y, y_hat)</dt><dd><tt>Función&nbsp;para&nbsp;calcular&nbsp;el&nbsp;%&nbsp;de&nbsp;aciertos&nbsp;en&nbsp;la&nbsp;dirección,&nbsp;teniendo&nbsp;en&nbsp;cuenta&nbsp;las&nbsp;observaciones&nbsp;y&nbsp;las&nbsp;predicciones.<br>
+Por&nbsp;dirección&nbsp;se&nbsp;entiende&nbsp;que&nbsp;si&nbsp;en&nbsp;la&nbsp;observación&nbsp;el&nbsp;valor&nbsp;sube,&nbsp;en&nbsp;la&nbsp;predicción&nbsp;también&nbsp;igualmente&nbsp;si&nbsp;baja.<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;y&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;las&nbsp;observaciones<br>
+-&nbsp;y_hat&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;las&nbsp;predicciones<br>
+&nbsp;<br>
+Retorna:<br>
+-&nbsp;[valor]&nbsp;--&nbsp;%&nbsp;de&nbsp;aciertos&nbsp;en&nbsp;la&nbsp;dirección</tt></dd></dl>
+ <dl><dt><a name="-inverse_transform"><strong>inverse_transform</strong></a>(data, scaler, n_features)</dt></dl>
  <dl><dt><a name="-normalize_data"><strong>normalize_data</strong></a>(values, scale=(-1, 1))</dt><dd><tt>Función&nbsp;para&nbsp;normalizar&nbsp;los&nbsp;datos,&nbsp;es&nbsp;decir,&nbsp;escalarlos&nbsp;en&nbsp;una&nbsp;escala&nbsp;que&nbsp;por&nbsp;*default*&nbsp;es&nbsp;[-1,&nbsp;1]<br>
 &nbsp;<br>
 Parámetros:<br>

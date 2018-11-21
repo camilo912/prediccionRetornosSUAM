@@ -82,7 +82,7 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 	from matplotlib import pyplot as plt
 	from sklearn.metrics import mean_squared_error
 	from sklearn.svm import SVR
-	n_generations = 250
+	n_generations = 2500
 	n_chars = dataFrame.shape[1]
 	n_villagers = max(1, int(n_chars / 2))
 	villagers = np.random.randint(2, size=(n_villagers, n_chars))
@@ -162,7 +162,8 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 	cols = columns[villagers[np.where(losses == np.min(losses))[0][0]]]
 	df = dataFrame[cols]
 	df.columns = np.array(original_cols)[cols]
-	df.to_csv('data/forecast-competition-complete_selected.csv')
+	df.to_csv('data/data_selected.csv')
+	print('se seleccionaron: %d variables' % (df.shape[1]))
 
 def select_features_sa(dataFrame, max_vars, original_cols):
 	"""

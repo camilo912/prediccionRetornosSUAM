@@ -49,14 +49,16 @@ def main():
 	select = 0 # set to True for performing feature selection
 	original = 0 # set to True for training with original data (not feature selected)
 	time_steps = 1 # number of periods in the future to predict
-	max_vars = 50 # maximum number of variables for taking in count for variable selection
+	max_vars = 100 # maximum number of variables for taking in count for variable selection
 	verbosity = 0 # level of logs
-	parameters_file_name = None #'parameters/default_lstm_%dtimesteps.pars' % time_steps
+	parameters_file_name = 'parameters/camilo.pars' # None # 'parameters/default_lstm_%dtimesteps.pars' % time_steps
 	MAX_EVALS = 100
 	only_predict = False
 	model_file_name = None # 'models/lstm-noSW-prueba.h5'
 
-	input_file_name = 'data/forecast-competition-complete.csv'
+	#input_file_name = 'data/forecast-competition-complete.csv'
+	input_file_name = 'data/data_16_11_2018.csv'
+	#input_file_name = 'data/data_returns.csv'
 	dataframe = pd.read_csv(input_file_name, header=0, index_col=0)
 	df = pd.DataFrame()
 	output_file_name = 'results/salida_' + str(time_steps) + '_periodos.csv'
@@ -76,22 +78,27 @@ def main():
 	rango = maxi - mini
 
 	o, p = [], []
-	ini = 400
-	fin = 450
+	ini = 210
+	fin = 226
 	step = time_steps
 	assert fin <= 500
 
 	predictor = series_predictor.Predictor(model, original, time_steps)
 
 	for i in range(ini, fin, step):
-		# only select variables once 
-		if(select and i > ini):
-			select = 0
-			original = 0
+		if(i > ini):
+			# only select variables once 
+			if(select):
+				select = 0
+				original = 0
 		
-		# only optimize parameters once
-		if(parameters and i > ini):
-			parameters = 0
+			# only optimize parameters once
+			if(parameters):
+				parameters = 0
+
+			# Only train once
+			if(not only_predict):
+				only_predict = True
 		
 		print(i)
 		train, test = split_data(dataframe.values, i)

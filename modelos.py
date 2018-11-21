@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 import math
+import utils
 
 def calculate_rmse(n_series, n_features, n_lags, X, y, scaler, model):
 	import utils
@@ -108,7 +109,7 @@ def weighted_mse(yTrue, yPred):
 		- yPred -- predicciones para calcular el error
 
 		Retorna:
-		- valor -- error cuadrático medio ponderado
+		- [valor] -- error cuadrático medio ponderado
 	"""
 	from keras import backend as K
 	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (n_series,)
@@ -150,7 +151,8 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		- y_hat_test -- Arreglo de numpy, predicciones de la partición de *testing* en escala real
 		- val_y -- Arreglo de numpy, observaciones de la particón de validación en escala real
 		- y_hat_val -- Arreglo de numpy, predicciones de la partición de validación en escala real
-		- last -- arreglo de numpy, predicción de los últimos valores
+		- last -- Arreglo de numpy, predicción de los últimos valores
+		- [valor] -- Flotante, % de acierto en la dirección
 
 
 	"""
@@ -169,12 +171,16 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
 		verbose = verbose_dict[verbose]
 
+		# for training on whole dataset
+		whole_X = np.append(np.append(train_X, val_X, axis=0), test_X, axis=0)
+		whole_y = np.append(np.append(train_y, val_y, axis=0), test_y, axis=0)
+
 		model = Sequential()
 		if(n_series == 1):
-			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True))
-			model.add(Dropout(0.25))
+			#model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True))
+			#model.add(Dropout(0.5))
 			model.add(LSTM(n_hidden))
-			model.add(Dropout(0.5))
+			#model.add(Dropout(0.5))
 			model.add(Dense(n_out))
 		else:
 			#model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
@@ -191,72 +197,128 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			#model.add(Dropout(0.5))
 			model.add(Dense(n_out))
 
-		opt = Adam(lr=0.001)#, decay=0.0)
+		opt = Adam(lr=0.0001, clipvalue=5)#, decay=0.0)
 		model.compile(loss=weighted_mse, optimizer=opt)
 		# model.compile(loss=lambda yTrue, yPred: K.mean((1/K.cumsum(K.ones_like(yTrue[0,:])))*K.square(yTrue-yPred)), optimizer=opt)
 		# model.compile(loss='mse', optimizer=opt)
-		model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
+		#w_ini = model.get_weights()
+		history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
+		if(verbosity > 0):
+			plt.plot(history.history['loss'])
+			plt.show()
+
+		y_hat_val = model.predict(val_X)
+		y_hat_test = model.predict(test_X)
+
+		if(calc_val_error):
+			# for validation
+			rmses_val = []
+			rmse_val = 0
+			#weigth = 1.0
+			#step = 0.1
+			for i in range(n_out):
+				tmp = np.zeros((len(y_hat_val[:, i].ravel()), n_features))
+				tmp[:, 0] = y_hat_val[:, i].ravel()
+				y_hat_val[:, i] = scaler.inverse_transform(tmp)[:, 0]
+
+				tmp = np.zeros((len(val_y[:, i].ravel()), n_features))
+				tmp[:, 0] = val_y[:, i].ravel()
+				val_y[:, i] = scaler.inverse_transform(tmp)[:, 0]
+
+				rmses_val.append(math.sqrt(mean_squared_error(val_y[:, i], y_hat_val[:, i])))
+				#rmse_val += rmses_val[-1]*weigth
+				#weigth -= step
+			rmse_val = np.mean(rmses_val)
+		else:
+			rmse_val = None
+
+		if(calc_test_error):
+			# for test
+			rmses = []
+			rmse = 0
+			#weigth = 1.5
+			#step = 0.1
+			for i in range(n_out):
+				tmp = np.zeros((len(y_hat_test[:, i].ravel()), n_features))
+				tmp[:, 0] = y_hat_test[:, i].ravel()
+				y_hat_test[:, i] = scaler.inverse_transform(tmp)[:, 0]
+
+				tmp = np.zeros((len(test_y[:, i].ravel()), n_features))
+				tmp[:, 0] = test_y[:, i].ravel()
+				test_y[:, i] = scaler.inverse_transform(tmp)[:, 0]
+
+				rmses.append(math.sqrt(mean_squared_error(test_y[:, i], y_hat_test[:, i])))
+				#rmse += rmses[-1]*weigth
+				#weigth -= step
+			rmse = np.mean(rmses)
+		else:
+			rmse = None
+
+		# # reset model weights
+		# model.set_weights(w_ini)
+
+		model = Sequential()
+		if(n_series == 1):
+			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True))
+			model.add(Dropout(0.5))
+			model.add(LSTM(n_hidden))
+			#model.add(Dropout(0.5))
+			model.add(Dense(n_out))
+		else:
+			#model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
+			#model.add(Dense(n_out, input_shape=(n_hidden,)))
+			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True))
+			#model.add(Dropout(0.5))
+			#model.add(Dense(n_hidden, activation='relu'))
+			#model.add(Dropout(0.5))
+			#model.add(LSTM(n_hidden, return_sequences=True))
+			#model.add(Dropout(0.5))
+			#model.add(Dense(n_hidden, activation='relu'))
+			#model.add(Dropout(0.5))
+			model.add(LSTM(n_hidden))
+			#model.add(Dropout(0.5))
+			model.add(Dense(n_out))
+
+		opt = Adam(lr=0.0001, clipvalue=5)#, decay=0.0)
+		model.compile(loss=weighted_mse, optimizer=opt)
+
+		history = model.fit(whole_X, whole_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
+		plt.plot(history.history['loss'])
+		plt.show()
+
 		model.save(model_file_name)
+
+		# predict last
+		last = model.predict(np.expand_dims(last_values, axis=0))
+		# transform last values
+		tmp = np.zeros((last.shape[1], n_features))
+		tmp[:, 0] = last
+		last = scaler.inverse_transform(tmp)[:, 0]
+
+		dir_acc = utils.get_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
 	
 	else:
 		from keras.models import load_model
 		model = load_model(model_file_name, custom_objects={'weighted_mse': weighted_mse})
+		model.fit(test_X[[-1]], test_y[[-1]], epochs=1, batch_size=1, verbose=0, shuffle=False)
+		model.save(model_file_name)
 
-	y_hat_val = model.predict(val_X)
-	y_hat_test = model.predict(test_X)
+		last = model.predict(np.expand_dims(last_values, axis=0))
 
-	# predict last
-	last = model.predict(np.expand_dims(last_values, axis=0))
-	if(calc_val_error):
-		# for validation
-		rmses_val = []
-		rmse_val = 0
-		#weigth = 1.0
-		#step = 0.1
-		for i in range(n_out):
-			tmp = np.zeros((len(y_hat_val[:, i].ravel()), n_features))
-			tmp[:, 0] = y_hat_val[:, i].ravel()
-			y_hat_val[:, i] = scaler.inverse_transform(tmp)[:, 0]
+		# transform last values
+		tmp = np.zeros((last.shape[1], n_features))
+		tmp[:, 0] = last
+		last = scaler.inverse_transform(tmp)[:, 0]
 
-			tmp = np.zeros((len(val_y[:, i].ravel()), n_features))
-			tmp[:, 0] = val_y[:, i].ravel()
-			val_y[:, i] = scaler.inverse_transform(tmp)[:, 0]
-
-			rmses_val.append(math.sqrt(mean_squared_error(val_y[:, i], y_hat_val[:, i])))
-			#rmse_val += rmses_val[-1]*weigth
-			#weigth -= step
-		rmse_val = np.mean(rmses_val)
-	else:
-		rmse_val = None
-
-	if(calc_test_error):
-		# for test
-		rmses = []
-		rmse = 0
-		#weigth = 1.5
-		#step = 0.1
-		for i in range(n_out):
-			tmp = np.zeros((len(y_hat_test[:, i].ravel()), n_features))
-			tmp[:, 0] = y_hat_test[:, i].ravel()
-			y_hat_test[:, i] = scaler.inverse_transform(tmp)[:, 0]
-
-			tmp = np.zeros((len(test_y[:, i].ravel()), n_features))
-			tmp[:, 0] = test_y[:, i].ravel()
-			test_y[:, i] = scaler.inverse_transform(tmp)[:, 0]
-
-			rmses.append(math.sqrt(mean_squared_error(test_y[:, i], y_hat_test[:, i])))
-			#rmse += rmses[-1]*weigth
-			#weigth -= step
-		rmse = np.mean(rmses)
-	else:
 		rmse = None
+		rmse_val = None
+		test_y = None
+		y_hat_test = None
+		val_y = None
+		y_hat_val = None
+		dir_acc = None
 
-	# transform last values
-	tmp = np.zeros((last.shape[1], n_features))
-	tmp[:, 0] = last
-	last = scaler.inverse_transform(tmp)[:, 0]
-
-	return rmse, rmse_val, test_y, y_hat_test, val_y, y_hat_val, last
+	return rmse, rmse_val, test_y, y_hat_test, val_y, y_hat_val, last, dir_acc
 
 ############################ LSTM no slidding windows ################################
 def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, lr, n_features, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name):
@@ -293,6 +355,7 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 		- obs_val -- Arreglo de numpy, observaciones de la particón de validación en escala real
 		- preds_val -- Arreglo de numpy, predicciones de la partición de validación en escala real
 		- last -- arreglo de numpy, predicción de los últimos valores
+		- [valor] -- Flotante, % de acierto en la dirección
 
 	"""
 	n_out = n_series
@@ -438,7 +501,7 @@ def model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y,
 	tmp[:, 0] = last
 	last = scaler.inverse_transform(tmp)[:, 0]
 
-	return rmse, rmse_val, obs_test, preds_test, obs_val, preds_val, last.ravel()
+	return rmse, rmse_val, obs_test, preds_test, obs_val, preds_val, last.ravel(), utils.get_direction_accuracy(obs_test.ravel(), preds_test.ravel())
 
 ###################### random forest ##########################
 def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name):
@@ -476,6 +539,7 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 		- y_valset -- Arreglo de numpy, observaciones de la particón de validación en escala real
 		- y_hat_val -- Arreglo de numpy, predicciones de la partición de validación en escala real
 		- last -- arreglo de numpy, predicción de los últimos valores
+		- [valor] -- Flotante, % de acierto en la dirección
 
 	"""
 	from sklearn.externals import joblib
@@ -502,7 +566,7 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 
 	last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
-	return rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last
+	return rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last, utils.get_direction_accuracy(y, y_hat)
 
 ####################### ada boost ###############################
 def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, lr, max_depth, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name):
@@ -540,6 +604,7 @@ def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_
 		- y_valset -- Arreglo de numpy, observaciones de la particón de validación en escala real
 		- y_hat_val -- Arreglo de numpy, predicciones de la partición de validación en escala real
 		- last -- arreglo de numpy, predicción de los últimos valores
+		- [valor] -- Flotante, % de acierto en la dirección
 
 	"""
 	from sklearn.externals import joblib
@@ -566,7 +631,7 @@ def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_
 		rmse = None
 	last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
-	return rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last
+	return rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last, utils.get_direction_accuracy(y, y_hat)
 
 ####################################### SVM ##############################
 def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name):
@@ -602,6 +667,7 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 		- y_valset -- Arreglo de numpy, observaciones de la particón de validación en escala real
 		- y_hat_val -- Arreglo de numpy, predicciones de la partición de validación en escala real
 		- last -- arreglo de numpy, predicción de los últimos valores
+		- [valor] -- Flotante, % de acierto en la dirección
 
 	"""
 	from sklearn.externals import joblib
@@ -610,7 +676,8 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 		from sklearn.svm import SVR
 
 		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
-		model = SVR(kernel='poly', degree=1, gamma='scale', verbose=verbose)
+		# model = SVR(kernel='poly', degree=1, gamma='scale', verbose=verbose)
+		model = SVR(verbose=verbose, gamma='auto')
 		model.fit(train_X, train_y.ravel())
 		joblib.dump(model, model_file_name)
 	else:
@@ -629,7 +696,7 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 
 	last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
-	return rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last
+	return rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last, utils.get_direction_accuracy(y, y_hat)
 
 ###################################### ARIMA #########################################
 def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, only_predict, model_file_name):
@@ -669,6 +736,7 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 		- val_y -- Arreglo de numpy, observaciones de la particón de validación en escala real
 		- y_hat_val -- Arreglo de numpy, predicciones de la partición de validación en escala real
 		- inv_yhat[-1] -- arreglo de numpy, predicción de los últimos valores
+		- [valor] -- Flotante, % de acierto en la dirección
 
 	"""
 	from statsmodels.tsa.statespace.sarimax import SARIMAX
@@ -737,4 +805,4 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 		return 9e+10, 9e+10, None, None, None, None, None
 
 
-	return rmse, rmse_val, test_y, y_hat, val_y, y_hat_val, inv_yhat[-1]
+	return rmse, rmse_val, test_y, y_hat, val_y, y_hat_val, inv_yhat[-1], utils.get_direction_accuracy(test_y, y_hat)

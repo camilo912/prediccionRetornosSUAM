@@ -28,7 +28,7 @@ def inverse_transform(data, scaler, n_features):
 		data[:, i] = scaler.inverse_transform(tmp)[:, 0]
 	return data
 
-def normalize_data(values, scale=(-1,1)):
+def normalize_data(values, scale=(0,1)):
 	"""
 		Función para normalizar los datos, es decir, escalarlos en una escala que por *default* es [-1, 1]
 
@@ -141,6 +141,8 @@ def transform_values(data, n_lags, n_series, dim):
 	val_size =0.2
 	test_size = 0.2
 	n_features = data.shape[1]
+	#print(data)
+	#raise Exception('Debug')
 	reframed = series_to_supervised(data, n_lags, n_series)
 
 	values = reframed.values # if n_lags = 1 then shape = (349, 100), if n_lags = 2 then shape = (348, 150)
@@ -304,10 +306,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
-		rmse, rmse_val, _, _, _, _, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
+		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
 														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val
+		rmse = rmse_val + (1 - dir_acc)
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -320,10 +322,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _, _, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
+		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
 																n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val
+		rmse = rmse_val + (1 - dir_acc)
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -335,10 +337,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _, _, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
+		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
 															params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val
+		rmse = rmse_val + (1 - dir_acc)
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -350,10 +352,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _, _, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
+		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
 													verbosity, False, None, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val
+		rmse = rmse_val + (1 - dir_acc)
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -367,10 +369,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		wall = int(len(values)*0.6)
 		wall_val= int(len(values)*0.2)
 		train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
-		rmse, rmse_val, _, _, _, _, _ = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
+		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
 														calc_test_error, verbosity, False, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val
+		rmse = rmse_val + (1 - dir_acc)
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -381,10 +383,10 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(values)
-		rmse, rmse_val, _, _, _, _, _ = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, 
+		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, 
 																		last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val
+		rmse = rmse_val + (1 - dir_acc)
 		run_time = timer() - start
 		print('rmse: ', rmse)
 		print('time: ', run_time, end='\n\n')
@@ -483,5 +485,23 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	of_connection.close()
 
 	return best, bayes_trials_results
+
+def get_direction_accuracy(y, y_hat):
+	"""
+		Función para calcular el % de aciertos en la dirección, teniendo en cuenta las observaciones y las predicciones.
+		Por dirección se entiende que si en la observación el valor sube, en la predicción también igualmente si baja.
+
+		Parámetros:
+		- y -- Arreglo de numpy, las observaciones
+		- y_hat -- Arreglo de numpy, las predicciones
+
+		Retorna:
+		- [valor] -- % de aciertos en la dirección
+
+		
+	"""
+	y_dirs = [1 if y[i] < y[i+1] else 0 for i in range(len(y) - 1)]
+	y_hat_dirs = [1 if y_hat[i] < y_hat[i+1] else 0 for i in range(len(y_hat) - 1)]
+	return sum(np.array(y_dirs) == np.array(y_hat_dirs))/len(y)
 
 
