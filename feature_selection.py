@@ -82,7 +82,7 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 	from matplotlib import pyplot as plt
 	from sklearn.metrics import mean_squared_error
 	from sklearn.svm import SVR
-	n_generations = 2500
+	n_generations = 250
 	n_chars = dataFrame.shape[1]
 	n_villagers = max(1, int(n_chars / 2))
 	villagers = np.random.randint(2, size=(n_villagers, n_chars))

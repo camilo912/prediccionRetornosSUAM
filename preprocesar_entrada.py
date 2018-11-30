@@ -23,15 +23,14 @@ def main():
 	# df = pd.read_csv('data/variables_16_11_2018.csv', header=0, index_col=0)
 	df = pd.read_csv('data/returns_complete_americas.csv', header=0, index_col=0)
 	#target = 'IBOXIG_Index#@#PX_LAST'
-	target='AMERICAS'
-	#period = 'M' # 'Q'
-	period = 'Q'
+	target='IDCOT3TR_Index#@#PX_LAST'
+	period = 'M' # 'Q'
 
 	df.index = pd.DatetimeIndex(df.index).to_period(period)
 	df = get_consistent_columns(df, target)
 	print(df.shape)
-	# df.to_csv('data/data_16_11_2018.csv')
-	df.to_csv('data/data_returns.csv')
+	df.to_csv('data/data_16_11_2018.csv')
+	# df.to_csv('data/data_returns.csv')
 
 
 if __name__ == '__main__':

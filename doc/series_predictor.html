@@ -47,9 +47,9 @@
 <td colspan=2><tt>Clase&nbsp;para&nbsp;crear&nbsp;los&nbsp;modelos,&nbsp;entrenarlos&nbsp;y&nbsp;predecir&nbsp;con&nbsp;ellos,&nbsp;en&nbsp;general&nbsp;es&nbsp;la&nbsp;clase&nbsp;principal&nbsp;y&nbsp;mediante&nbsp;esta&nbsp;se&nbsp;interactua&nbsp;con&nbsp;los&nbsp;modelos.<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="Predictor-__init__"><strong>__init__</strong></a>(self, id_model, original, time_steps)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
+<dl><dt><a name="Predictor-__init__"><strong>__init__</strong></a>(self, id_model, original, time_steps, data, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, only_predict=False, model_file_name=None)</dt><dd><tt>Contructor&nbsp;de&nbsp;la&nbsp;clase,&nbsp;añadir&nbsp;aquí&nbsp;todo&nbsp;-................</tt></dd></dl>
 
-<dl><dt><a name="Predictor-predict"><strong>predict</strong></a>(self, data, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, only_predict=False, model_file_name=None)</dt><dd><tt>Función&nbsp;que&nbsp;recibe&nbsp;como&nbsp;entrada&nbsp;los&nbsp;datos&nbsp;de&nbsp;entrenamiento&nbsp;junto&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;y&nbsp;retorna&nbsp;las&nbsp;predicciones&nbsp;a&nbsp;los&nbsp;*timesteps*&nbsp;especificados.<br>
+<dl><dt><a name="Predictor-train"><strong>train</strong></a>(self, data, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, model_file_name=None)</dt><dd><tt>Función&nbsp;que&nbsp;recibe&nbsp;como&nbsp;entrada&nbsp;los&nbsp;datos&nbsp;de&nbsp;entrenamiento&nbsp;junto&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;y&nbsp;retorna&nbsp;las&nbsp;predicciones&nbsp;a&nbsp;los&nbsp;*timesteps*&nbsp;especificados.<br>
 &nbsp;<br>
 Parámetros:<br>
 -&nbsp;data&nbsp;--&nbsp;arreglo&nbsp;de&nbsp;numpy&nbsp;con&nbsp;los&nbsp;datos&nbsp;de&nbsp;entrenamiento&nbsp;con&nbsp;la&nbsp;serie&nbsp;a&nbsp;predecir&nbsp;en&nbsp;la&nbsp;primera&nbsp;posición<br>
@@ -60,7 +60,6 @@ Parámetros:<br>
 -&nbsp;verbosity&nbsp;--&nbsp;entero&nbsp;que&nbsp;denota&nbsp;el&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución,&nbsp;entre&nbsp;más&nbsp;alto&nbsp;más&nbsp;graficos&nbsp;o&nbsp;información&nbsp;se&nbsp;mostrará&nbsp;(tiene&nbsp;un&nbsp;límite&nbsp;diferente&nbsp;para&nbsp;cada&nbsp;algoritmo)<br>
 -&nbsp;parameters_file_name&nbsp;--&nbsp;*string*&nbsp;que&nbsp;contien&nbsp;el&nbsp;nomrbe&nbsp;del&nbsp;archivo&nbsp;con&nbsp;los&nbsp;parametros&nbsp;a&nbsp;leer,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;se&nbsp;ejecutara&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;por&nbsp;*default*<br>
 -&nbsp;max_evals&nbsp;--&nbsp;entero&nbsp;con&nbsp;la&nbsp;cantidad&nbsp;de&nbsp;ejecuciones&nbsp;a&nbsp;la&nbsp;hora&nbsp;de&nbsp;hacer&nbsp;tuning&nbsp;de&nbsp;parámetros,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;es&nbsp;100<br>
--&nbsp;only_predict&nbsp;--&nbsp;*booleano*&nbsp;que&nbsp;denota&nbsp;si&nbsp;solo&nbsp;se&nbsp;quiere&nbsp;predecir&nbsp;utilizando&nbsp;un&nbsp;modelo&nbsp;previamente&nbsp;entrenado,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;es&nbsp;*false*<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;*string*&nbsp;con&nbsp;el&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;que&nbsp;contiene&nbsp;el&nbsp;model&nbsp;oque&nbsp;se&nbsp;quiere&nbsp;leer&nbsp;para&nbsp;solamente&nbsp;hacer&nbsp;las&nbsp;predicciones<br>
 &nbsp;<br>
 Retorna:<br>

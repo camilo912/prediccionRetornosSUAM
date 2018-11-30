@@ -1,0 +1,11 @@
+Modelos optimos:
+ * IBOXIG Index:
+
+
+ * IDCOT3TR Index:
+	1 timetep:
+		self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 45, 100, 200, 10
+		2 LSTM, Dense
+
+	10 timestep:
+		

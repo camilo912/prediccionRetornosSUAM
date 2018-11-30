@@ -84,37 +84,6 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 		agg.dropna(inplace=True)
 	return agg
 
-# For no slidding window approach
-def split_data(data):
-	"""
-		Función para dividir la serie de datos en entrenamiento, validación y *testing* sin el concepto de *lags* adicionalmente retorna los ultimos valores para la predicción. 
-		Esta función solo es utilizada por el modelo LSTM sin el concepto de ventana deslizante
-
-		Parámetros:
-		- data -- Arreglo de numpy, los datos
-
-		Retorna:
-		- X_train -- Arreglo de numpy, datos de entrenamiento
-		- X_val -- Arreglo de numpy, datos de validación
-		- X_test -- Arreglo de numpy, datos de *testing*
-		- y_train -- Arreglo de numpy, observaciones de tiempos futuros de entrenamiento
-		- y_val -- Arreglo de numpy, observaciones de tiempos futuros de validación
-		- y_test -- Arreglo de numpy, observaciones de tiempos futuros de *testing
-		- last_values -- Arreglo de numpy, últimos datos apra hacer la predicción *out of sample*
-
-	"""
-	n_train = int(len(data)*0.6)
-	n_val = int(len(data)*0.2)
-	ys = data[1:, 0]
-
-	X_train, y_train = data[:n_train, :], data[1:n_train+1]
-	X_val, y_val = data[n_train:n_train+n_val, :], data[n_train+1:n_train+n_val+1]
-	X_test, y_test = data[n_train+n_val:-1, :], data[n_train+n_val+1:]
-
-	last_values = data[-1]
-
-	return X_train, X_val, X_test, y_train, y_val, y_test, last_values
-
 def transform_values(data, n_lags, n_series, dim):
 	"""
 		Función para preprocesar la serie de entrada, primero le cambia el formato a (número de ejemplos, número de *lags*, número de *features*), luego divide estos datos en 
@@ -174,7 +143,7 @@ def transform_values(data, n_lags, n_series, dim):
 		test_X = test_X.reshape((test_X.shape[0], n_lags, n_features))
 		last_values = np.append(test_X[-1,1:n_lags,:], [test[-1,-n_features:]], axis=0)
 	else:
-		last_values = np.append(test_X[-1, n_features:].reshape(1,-1), [test[-1,-n_features:]], axis=1)
+		last_values = np.append(test_X[-1, n_features:].reshape(1,-1), [test[-1,-n_features:]], axis=1)	
 		# return train_X, test_X, train_y, test_y, last_values
 	return train_X, val_X, test_X, train_y, val_y, test_y, last_values
 
@@ -306,7 +275,7 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
-		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
+		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
 														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
 		rmse = rmse_val + (1 - dir_acc)
@@ -322,7 +291,7 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
+		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
 																n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
 		rmse = rmse_val + (1 - dir_acc)
@@ -337,7 +306,7 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
+		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
 															params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
 		rmse = rmse_val + (1 - dir_acc)
@@ -352,7 +321,7 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
-		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
+		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
 													verbosity, False, None, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
 		rmse = rmse_val + (1 - dir_acc)
@@ -368,23 +337,11 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		start = timer()
 		wall = int(len(values)*0.6)
 		wall_val= int(len(values)*0.2)
-		train, val, test, last_values = values[:wall, 0], values[wall:wall+wall_val,0], values[wall+wall_val:-1,0], values[-1,0]
-		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_arima(train, val, [], [], [], test, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
-														calc_test_error, verbosity, False, model_file_name)
-		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val + (1 - dir_acc)
-		run_time = timer() - start
-		print('rmse: ', rmse)
-		print('time: ', run_time, end='\n\n')
-	elif(id_model == 5):
-		if(model_file_name == None): model_file_name = 'models/trials-lstm-noSW.h5'
-		for parameter_name in ['n_epochs']:
-			params[parameter_name] = int(params[parameter_name])
-
+		train_X, val_X, test_X, last_values = values[:wall, :], values[wall:wall+wall_val,:], values[wall+wall_val:-1,:], values[-1,:]
+		train_y, val_y, test_y = values[1:wall+1,0], values[wall+1:wall+wall_val+1,0], values[wall+wall_val+1:,0]
 		start = timer()
-		train_X, val_X, test_X, train_y, val_y, test_y, last_values = split_data(values)
-		rmse, rmse_val, _, _, _, _, _, dir_acc = modelos.model_lstm_noSliddingWindows(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['lr'], n_features, -1, scaler, 
-																		last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
+		rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
+														calc_test_error, verbosity, False, model_file_name)
 		# rmse = rmse*0.7 + rmse_val*0.3
 		rmse = rmse_val + (1 - dir_acc)
 		run_time = timer() - start
@@ -408,7 +365,7 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 		Parámetros:
 		- id_model -- Entero, id del modelo que se va a entrenar
 		- MAX_EVALS -- Entero, número máximo  de iteraciones de la optimización bayesiana
-		- values -- Arreglo de numpy, datos con los cauales se va a entrenar el modelo, es decir, la serie previamente preprocesada
+		- values -- Arreglo de numpy, datos con los cuales se va a entrenar el modelo, es decir, la serie previamente preprocesada
 		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para el escalamiento de los datos y para revertir este escalamiento
 		- n_features -- Entero, número de *features* de la serie
 		- n_series -- Entero, número de *time steps*
@@ -427,30 +384,27 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	if(id_model == 0):
 		# space
 		# big
-		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
+		space = {'n_lags': hp.quniform('n_lags', 1, min(50, int(len(values)/2)), 1),
 				'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
 				'batch_size': hp.quniform('batch_size', 5, 100, 1),
 				'n_hidden': hp.quniform('n_hidden', 5, 300, 1)}
 	elif(id_model == 1):
-		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
+		space = {'n_lags': hp.quniform('n_lags', 1, min(50, int(len(values)/2)), 1),
 				'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
 				'max_features': hp.quniform('max_features', 1, n_features, 1),
 				'min_samples': hp.quniform('min_samples', 1, 20, 1)}
 	elif(id_model == 2):
-		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1),
+		space = {'n_lags': hp.quniform('n_lags', 1, min(50, int(len(values)/2)), 1),
 				'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
 				'lr': hp.uniform('lr', 0.00001, 1.0),
 				'max_depth': hp.quniform('max_depth', 2, 10, 1)}
 	elif(id_model == 3):
-		space = {'n_lags': hp.quniform('n_lags', 1, 50, 1)}
+		space = {'n_lags': hp.quniform('n_lags', 1, min(50, int(len(values)/2)), 1)}
 	elif(id_model == 4):
 		diff_level = calculate_diff_level_for_stationarity(values, scaler, 5)
 		space={'n_lags': hp.quniform('n_lags', 1, 12, 1),
 				'd': hp.quniform('d', diff_level, diff_level, 1),
 				'q': hp.quniform('q', 1, 12, 1)}
-	elif(id_model == 5):
-		space = {'lr': hp.uniform('lr', 0.00001, 0.15),
-				'n_epochs': hp.quniform('n_epochs', 5, 500, 1)}
 
 	# Keep track of results
 	bayes_trials = Trials()
@@ -480,8 +434,6 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], best['n_estimators'], best['lr'], best['max_depth'], MAX_EVALS])
 	elif(id_model == 3):
 		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], MAX_EVALS])
-	elif(id_model == 5):
-		writer.writerow([bayes_trials_results[0]['loss'], best['lr'], best['n_epochs'], MAX_EVALS])
 	of_connection.close()
 
 	return best, bayes_trials_results
@@ -503,5 +455,10 @@ def get_direction_accuracy(y, y_hat):
 	y_dirs = [1 if y[i] < y[i+1] else 0 for i in range(len(y) - 1)]
 	y_hat_dirs = [1 if y_hat[i] < y_hat[i+1] else 0 for i in range(len(y_hat) - 1)]
 	return sum(np.array(y_dirs) == np.array(y_hat_dirs))/len(y)
+
+def calculate_rmse(y, y_hat):
+	assert len(y) == len(y_hat)
+	from sklearn.metrics import mean_squared_error
+	return np.sqrt(mean_squared_error(y, y_hat))
 
 

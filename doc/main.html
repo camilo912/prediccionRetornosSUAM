@@ -31,7 +31,7 @@
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><dl><dt><a name="-main"><strong>main</strong></a>()</dt><dd><tt>Main&nbsp;del&nbsp;proyecto,&nbsp;este&nbsp;archivo&nbsp;no&nbsp;es&nbsp;necesario,&nbsp;puede&nbsp;ser&nbsp;personalizado&nbsp;o&nbsp;incluso&nbsp;crear&nbsp;uno&nbsp;nuevo,&nbsp;este&nbsp;es&nbsp;simplemente&nbsp;el&nbsp;estilo&nbsp;del&nbsp;creador&nbsp;de&nbsp;este&nbsp;proyecto<br>
 &nbsp;<br>
-contien&nbsp;la&nbsp;interacción&nbsp;de&nbsp;un&nbsp;usuario&nbsp;final&nbsp;con&nbsp;el&nbsp;proyecto&nbsp;mediante&nbsp;este&nbsp;archivo&nbsp;se&nbsp;leen&nbsp;los&nbsp;datos&nbsp;de&nbsp;un&nbsp;archivo&nbsp;.csv,&nbsp;se&nbsp;inicializan&nbsp;los&nbsp;hyperparámetros&nbsp;para&nbsp;la&nbsp;ejecución<br>
+contiene&nbsp;la&nbsp;interacción&nbsp;de&nbsp;un&nbsp;usuario&nbsp;final&nbsp;con&nbsp;el&nbsp;proyecto&nbsp;mediante&nbsp;este&nbsp;archivo&nbsp;se&nbsp;leen&nbsp;los&nbsp;datos&nbsp;de&nbsp;un&nbsp;archivo&nbsp;.csv,&nbsp;se&nbsp;inicializan&nbsp;los&nbsp;hyperparámetros&nbsp;para&nbsp;la&nbsp;ejecución<br>
 se&nbsp;invoca&nbsp;al&nbsp;proyecto&nbsp;para&nbsp;realizar&nbsp;las&nbsp;predicciones&nbsp;y&nbsp;se&nbsp;grafican&nbsp;los&nbsp;resultados<br>
 &nbsp;<br>
 &nbsp;<br>
@@ -53,8 +53,8 @@ Se&nbsp;manjean&nbsp;11&nbsp;hyperparámetros&nbsp;principales<br>
 -&nbsp;verbosity&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;que&nbsp;indica&nbsp;el&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución,&nbsp;hasta&nbsp;2&nbsp;muestra&nbsp;gráficas,&nbsp;de&nbsp;ahí&nbsp;para&nbsp;arriba&nbsp;muestra&nbsp;*logs*&nbsp;de&nbsp;la&nbsp;ejecución<br>
 -&nbsp;parameters_file_name&nbsp;--&nbsp;String,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;va&nbsp;a&nbsp;guardar&nbsp;o&nbsp;cargar&nbsp;el&nbsp;modelo&nbsp;entrenado,&nbsp;si&nbsp;este&nbsp;parámetro&nbsp;es&nbsp;None,&nbsp;se&nbsp;utilzian&nbsp;los&nbsp;parámetros&nbsp;por&nbsp;*default*<br>
 -&nbsp;MAX_EVALS&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;iteraciones&nbsp;de&nbsp;la&nbsp;optimización&nbsp;bayesiana,&nbsp;si&nbsp;parameters&nbsp;es&nbsp;False&nbsp;este&nbsp;parámetro&nbsp;no&nbsp;importa<br>
--&nbsp;only_predict&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;solo&nbsp;se&nbsp;va&nbsp;a&nbsp;predecir&nbsp;o&nbsp;tambien&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar&nbsp;el&nbsp;modelo<br>
--&nbsp;model_file_name&nbsp;--&nbsp;String,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;va&nbsp;a&nbsp;guardar&nbsp;y/o&nbsp;cargar&nbsp;el&nbsp;modelo&nbsp;entrenado,&nbsp;si&nbsp;only_predict&nbsp;es&nbsp;False&nbsp;este&nbsp;parámetro&nbsp;no&nbsp;importa<br>
+-&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
+-&nbsp;model_file_name&nbsp;--&nbsp;String,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;va&nbsp;a&nbsp;guardar&nbsp;y/o&nbsp;cargar&nbsp;el&nbsp;modelo&nbsp;entrenado,&nbsp;si&nbsp;saved_model&nbsp;es&nbsp;False&nbsp;este&nbsp;parametro&nbsp;solo&nbsp;importa&nbsp;para&nbsp;guardar&nbsp;el&nbsp;modelo<br>
 &nbsp;<br>
 Hay&nbsp;1&nbsp;hyperparámetro&nbsp;adicional&nbsp;que&nbsp;es:<br>
 -&nbsp;predicting&nbsp;--&nbsp;Entero,&nbsp;id&nbsp;de&nbsp;la&nbsp;columna&nbsp;dentro&nbsp;del&nbsp;dataframe&nbsp;de&nbsp;la&nbsp;variable&nbsp;objetivo&nbsp;a&nbsp;predecir,&nbsp;para&nbsp;que&nbsp;en&nbsp;el&nbsp;caso&nbsp;que&nbsp;esta&nbsp;no&nbsp;sea&nbsp;la&nbsp;posición&nbsp;0,&nbsp;se&nbsp;intercambie</tt></dd></dl>
