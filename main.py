@@ -50,7 +50,7 @@ def main():
 	original = 0 # set to True for training with original data (not feature selected)
 	time_steps = 1 # number of periods in the future to predict
 	max_vars = 200 # maximum number of variables for taking in count for variable selection
-	verbosity = 0 # level of logs
+	verbosity = 2 # level of logs
 	parameters_file_name = None # 'parameters/camilo.pars' # 'parameters/default_lstm_%dtimesteps.pars' % time_steps
 	MAX_EVALS = 100
 	saved_model = False
@@ -58,10 +58,12 @@ def main():
 
 	#input_file_name = 'data/forecast-competition-complete.csv'
 	input_file_name = 'data/data_16_11_2018_differentiated.csv'
+	# input_file_name = 'data/data_16_11_2018.csv'
 	# input_file_name = 'data/data_returns.csv'
 	dataframe = pd.read_csv(input_file_name, header=0, index_col=0)
 	df = pd.DataFrame()
 	output_file_name = 'results/salida_' + str(time_steps) + '_periodos.csv'
+	# output_file_name = 'results/salida_' + str(time_steps) + '_periodos_SPTR.csv'
 
 	# chose the feature to predict
 	predicting = 0

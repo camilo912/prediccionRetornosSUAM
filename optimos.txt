@@ -35,6 +35,10 @@ Modelos optimos:
 	10 timestep:
 		No se han buscado parámetros óptimos
  * SPTR Index: -> Mensual
+	1 timetep con retornos:
+		self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
+		LSTM(relu), Dense
+		lr=0.001, clipvalue=0.005, decay=0.005
 
 
 

@@ -61,9 +61,9 @@ class Predictor():
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 250, 15
 				# for SPTR Index
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
 				# returns
-				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 400, 15
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
 
 		
 		elif(self.id_model == 1 and self.time_steps == 1):
@@ -128,7 +128,8 @@ class Predictor():
 			feature_selection.select_features_ga(pd.DataFrame(datos), max_vars, original_cols)
 		
 		if(not self.original and not self.evaluating):
-			df = pd.read_csv('data/data_selected.csv', header=0, index_col=0)
+			# df = pd.read_csv('data/data_selected.csv', header=0, index_col=0)
+			df = pd.read_csv('data/data_selected_SPTR.csv', header=0, index_col=0)
 			# df = pd.read_csv('data/forecast-competition-complete_selected.csv', index_col=0)
 			# df = pd.read_csv('data/forecast-competition-complete_selected_manually.csv', index_col=0)
 			self.data_train = df.values

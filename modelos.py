@@ -178,12 +178,12 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		K.clear_session()
 		model = Sequential()
 		if(n_series == 1):
-			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True))
+			#model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True, activation='relu'))
 			#model.add(LSTM(n_hidden, return_sequences=True))
 			#model.add(Dropout(0.5))
 			#model.add(LSTM(n_hidden, return_sequences=True))
 			#model.add(Dropout(0.5))
-			model.add(LSTM(n_hidden))
+			model.add(LSTM(n_hidden, activation='relu'))
 			#model.add(Dropout(0.5))
 			model.add(Dense(n_out))
 		else:
@@ -204,16 +204,17 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			model.add(Reshape((n_out,)))
 
 
-		opt = Adam(lr=0.0001)#, clipvalue=1)#, decay=0.0)
+		opt = Adam(lr=0.001, clipvalue=0.005, decay=0.005)
 		model.compile(loss=weighted_mse, optimizer=opt)
 		# model.compile(loss=lambda yTrue, yPred: K.mean((1/K.cumsum(K.ones_like(yTrue[0,:])))*K.square(yTrue-yPred)), optimizer=opt)
 		# model.compile(loss='mse', optimizer=opt)
 		#w_ini = model.get_weights()
 		history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
 		if(verbosity > 0):
+			plt.figure()
 			plt.plot(history.history['loss'])
 			plt.suptitle('Training loss')
-			plt.show()
+			# plt.show()
 
 		y_hat_val = model.predict(val_X)
 		y_hat_test = model.predict(test_X)
@@ -268,12 +269,12 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		K.clear_session()
 		model = Sequential()
 		if(n_series == 1):
-			model.add(LSTM(n_hidden, return_sequences=True))
+			#model.add(LSTM(n_hidden, return_sequences=True, activation='relu'))
 			#model.add(Dropout(0.5))
 			#model.add(LSTM(n_hidden, return_sequences=True))
 			#model.add(LSTM(n_hidden, return_sequences=True))
 			#model.add(Dropout(0.5))
-			model.add(LSTM(n_hidden))
+			model.add(LSTM(n_hidden, activation='relu'))
 			#model.add(Dropout(0.5))
 			model.add(Dense(n_out))
 		else:
@@ -293,16 +294,21 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			model.add(Dense(1))
 			model.add(Reshape((n_out,)))
 
-		opt = Adam(lr=0.0001)#, clipvalue=5)#, decay=0.0)
+		opt = Adam(lr=0.001, clipvalue=0.005, decay=0.005)
 		model.compile(loss=weighted_mse, optimizer=opt)
 
 		history = model.fit(whole_X, whole_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
 		if(verbosity > 0):
+			plt.figure()
 			plt.plot(history.history['loss'])
 			plt.suptitle('Whole data loss')
 			plt.show()
 
 		model.save(model_file_name)
+
+		pats = model.predict(whole_X)
+		print('rmse total training: ', utils.calculate_rmse(pats, whole_y))
+		print('direction accuracy total training: ', utils.get_direction_accuracy(pats, whole_y))
 
 		# predict last
 		last = model.predict(np.expand_dims(last_values, axis=0))
