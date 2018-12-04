@@ -20,10 +20,14 @@ def get_consistent_columns(df, target):
 	return df_new
 
 def main():
-	# df = pd.read_csv('data/variables_16_11_2018.csv', header=0, index_col=0)
-	df = pd.read_csv('data/returns_complete_americas.csv', header=0, index_col=0)
-	#target = 'IBOXIG_Index#@#PX_LAST'
-	target='IDCOT3TR_Index#@#PX_LAST'
+	df = pd.read_csv('data/variables_16_11_2018.csv', header=0, index_col=0)
+	# df = pd.read_csv('data/returns_complete_americas.csv', header=0, index_col=0)
+	# target = 'IBOXIG_Index#@#PX_LAST' # 1
+	# target='IDCOT3TR_Index#@#PX_LAST' # 2
+	# target = "IBOXHY_Index#@#PX_LAST"
+	# target = "GBIEMCOR_Index#@#PX_LAST"
+	# target = "JPEICORE_Index#@#PX_LAST"
+	target = 'SPTR_Index#@#PX_LAST'
 	period = 'M' # 'Q'
 
 	df.index = pd.DatetimeIndex(df.index).to_period(period)

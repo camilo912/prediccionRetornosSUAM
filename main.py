@@ -51,13 +51,13 @@ def main():
 	time_steps = 1 # number of periods in the future to predict
 	max_vars = 200 # maximum number of variables for taking in count for variable selection
 	verbosity = 0 # level of logs
-	parameters_file_name = None # 'parameters/camilo.pars' # None # 'parameters/default_lstm_%dtimesteps.pars' % time_steps
+	parameters_file_name = None # 'parameters/camilo.pars' # 'parameters/default_lstm_%dtimesteps.pars' % time_steps
 	MAX_EVALS = 100
 	saved_model = False
 	model_file_name = None # 'models/lstm-noSW-prueba.h5'
 
 	#input_file_name = 'data/forecast-competition-complete.csv'
-	input_file_name = 'data/data_16_11_2018.csv'
+	input_file_name = 'data/data_16_11_2018_differentiated.csv'
 	# input_file_name = 'data/data_returns.csv'
 	dataframe = pd.read_csv(input_file_name, header=0, index_col=0)
 	df = pd.DataFrame()
@@ -78,9 +78,9 @@ def main():
 	rango = maxi - mini
 
 	p = []
-	ini = 100
-	fin = 167
-	step = time_steps
+	ini = 200
+	fin = 225
+	step = 1 # time_steps
 
 	train, _ = split_data(dataframe.values, ini)
 
@@ -117,11 +117,12 @@ def main():
 	tam = min(len(preds), len(datos))
 	print('real rmse: ', utils.calculate_rmse(datos[:tam, 0], preds[:tam]))
 	print('real direction accuracy: %f%%' % (utils.get_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
-	plt.plot(datos[:, 0], marker='*', linestyle='-.', label='observations')
+	#plt.plot(datos[:, 0], marker='*', linestyle='-.', label='observations', lw=10)
+	plt.plot(datos[:, 0], label='observations', lw=10)
 	if(time_steps > 1):
 		for i in range(len(p)):
 			pad = [None for j in range(i*step)]
-			plt.plot(pad + list(p[i]))
+			plt.plot(pad + list(p[i]), color='blue')
 	else:
 		plt.plot(p, label='predictions')
 		plt.legend()

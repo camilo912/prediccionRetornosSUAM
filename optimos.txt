@@ -1,11 +1,43 @@
 Modelos optimos:
  * IBOXIG Index:
-
-
- * IDCOT3TR Index:
 	1 timetep:
-		self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 45, 100, 200, 10
+		self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 100, 269, 9
+		2 LSTM, Dense
+	10 timestep:
+		No se encontraron parámetros óptimos
+
+ * IDCOT3TR Index: -> Mensual
+	1 timetep:
+		self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 100, 269, 9
 		2 LSTM, Dense
 
 	10 timestep:
+		No se han buscado parámetros óptimos
+ * IBOXHY Index: -> Mensual
+	1 timetep:
+		self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+		2 LSTM, Dense
+
+	10 timestep:
+		No se han buscado parámetros óptimos
+ * GBIEMCOR Index: -> Mensual
+	1 timetep:
+		self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 9
+		4 LSTM, Dense
+
+	10 timestep:
+		No se han buscado parámetros óptimos
+ * JPEICORE Index: -> Mensual
+	1 timetep:
+		self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 250, 15
+		2 LSTM, Dense
+
+	10 timestep:
+		No se han buscado parámetros óptimos
+ * SPTR Index: -> Mensual
+
+
+
+
+
 		

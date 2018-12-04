@@ -13,15 +13,16 @@ class Predictor():
 		Clase para crear los modelos, entrenarlos y predecir con ellos, en general es la clase principal y mediante esta se interactua con los modelos.
 
 	"""
-	def __init__(self, dataframe, id_model, original, time_steps,  data, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None):
+	def __init__(self, datos, id_model, original, time_steps,  data_train, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None):
 		"""
 			Constructor de la clase, se encarga de cargar o entrenar el modelo según lo especificado en los hyperparámetros.
 
 			Parámetros:
+			- datos -- Arreglo de numpy, arreglo con todos los datos incluidos los de test (esto solo es necesario para la selección de variables)
 			- id_model -- Entero, id del modelo que se va a utilizar
 			- original -- Booleano, indica si entenar con las varaibles originales o con las eleccionadas. True para entrenar con las originales.
 			- time_steps -- Entero, número de periodos en el futuro a predecir
-			- data -- arreglo de numpy con los datos de entrenamiento con la serie a predecir en la primera posición
+			- data_train -- Arreglo de numpy, arreglo de numpy con los datos de entrenamiento con la serie a predecir en la primera posición
 			- original_cols -- lista que contiene los nombres de las variables originales, para mantener los nombres cuando se seleccionan variables
 			- tune -- *booleano* o entero que define si se hace tuning de parametros
 			- select -- *booleano* o entero que defien si se hace selección de variables
@@ -36,7 +37,7 @@ class Predictor():
 		self.id_model = id_model
 		self.original = original
 		self.time_steps = time_steps
-		self.data = data
+		self.data_train = data_train
 		self.original_cols = original_cols
 		self.retrain_cont = 0
 		self.retrain_rate = 10
@@ -48,18 +49,22 @@ class Predictor():
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 26, 181, 39, 3
 				
 			else:
-				# # self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 7, 288, 65 # 15, 91, 24, 2
-				# # self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 51, 21, 108, 35
-				# #self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 47, 188, 41
-				# # self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 47, 188, 41
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 17, 88, 41
-				#self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 30, 50, 150, 10
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 40, 50, 750, 5
-				#self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 20, 15, 450, 10
 				# for IDCOT3TR_Index
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 100, 269, 9
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 45, 80, 100, 10
-				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 45, 40, 1000, 15
+				# for IBOXIG Index
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+				# for IBOXHY_Index
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+				# for GBIEMCOR Index
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 9
+				# for JPEICORE Index
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 250, 15
+				# for SPTR Index
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+				# returns
+				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 400, 15
+
 		
 		elif(self.id_model == 1 and self.time_steps == 1):
 			if(self.original):
@@ -91,14 +96,15 @@ class Predictor():
 		else:
 			raise Exception('hyperparameters combination is not in the valid options.')
 
-		self.model = self.train(dataframe, original_cols, tune, select, max_vars, verbosity, parameters_file_name, max_evals, saved_model, model_file_name)
+		self.model = self.train(datos, original_cols, tune, select, max_vars, verbosity, parameters_file_name, max_evals, saved_model, model_file_name)
 
 
-	def train(self, dataframe, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None):
+	def train(self, datos, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None):
 		"""
 		Función que recibe como entrada los datos de entrenamiento junto con los parámetros y retorna el modelo entrenado.
 
 		Parámetros:
+		- datos -- Arreglo de numpy, arreglo con todos los datos incluidos los de test (esto solo es necesario para la selección de variables)
 		- original_cols -- lista que contiene los nombres de las variables originales, para mantener los nombres cuando se seleccionan variables
 		- tune -- *booleano* o entero que define si se hace tuning de parametros
 		- select -- *booleano* o entero que defien si se hace selección de variables
@@ -118,18 +124,18 @@ class Predictor():
 			self.original = 0
 			# feature selection
 			import feature_selection
-			# feature_selection.select_features_sa(pd.DataFrame(dataframe), max_vars)
-			feature_selection.select_features_ga(pd.DataFrame(dataframe), max_vars, original_cols)
+			# feature_selection.select_features_sa(pd.DataFrame(datos), max_vars)
+			feature_selection.select_features_ga(pd.DataFrame(datos), max_vars, original_cols)
 		
 		if(not self.original and not self.evaluating):
 			df = pd.read_csv('data/data_selected.csv', header=0, index_col=0)
 			# df = pd.read_csv('data/forecast-competition-complete_selected.csv', index_col=0)
 			# df = pd.read_csv('data/forecast-competition-complete_selected_manually.csv', index_col=0)
-			self.data = df.values
+			self.data_train = df.values
 			self.selected_features = list(df.columns)
 
 		self.MAX_EVALS = max_evals
-		values, self.scaler = utils.normalize_data(self.data, scale=(-1, 1))
+		values, self.scaler = utils.normalize_data(self.data_train, scale=(-1, 1))
 		n_features = values.shape[1]
 
 		calc_val_error = False if verbosity < 2 else True
@@ -461,14 +467,14 @@ class Predictor():
 		"""
 		n_news = len(new_ob)
 		self.evaluating = True
-		if(self.data.shape[1] != new_ob.shape[1]):
+		if(self.data_train.shape[1] != new_ob.shape[1]):
 			# if selected features
 			new_ob = pd.DataFrame(new_ob)
 			new_ob.columns = self.original_cols
 			new_ob = new_ob[self.selected_features].values
 		
-		self.data = np.append(self.data, new_ob, axis=0)
-		values = self.scaler.transform(self.data)
+		self.data_train = np.append(self.data_train, new_ob, axis=0)
+		values = self.scaler.transform(self.data_train)
 		
 		if(self.id_model==0):
 			train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
@@ -503,7 +509,7 @@ class Predictor():
 			print(last_values.shape)
 			pred = self.model.predict(len(values)-n_news, len(values) - 1, exog=last_values[:, 1:], endog=last_values[:, 0])
 
-		tmp = np.zeros((pred.shape[1], self.data.shape[1]))
+		tmp = np.zeros((pred.shape[1], self.data_train.shape[1]))
 		tmp[:, 0] = pred
 		last = self.scaler.inverse_transform(tmp)[:, 0]
 

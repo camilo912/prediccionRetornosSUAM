@@ -82,7 +82,10 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 	from matplotlib import pyplot as plt
 	from sklearn.metrics import mean_squared_error
 	from sklearn.svm import SVR
-	n_generations = 250
+	from tqdm import tqdm
+	from termcolor import colored
+
+	n_generations = 500
 	n_chars = dataFrame.shape[1]
 	n_villagers = max(1, int(n_chars / 2))
 	villagers = np.random.randint(2, size=(n_villagers, n_chars))
@@ -92,9 +95,13 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 	print_gen = int(n_generations / 10)
 
 	columns = np.array(dataFrame.columns)
-	for generation in range(n_generations):
+
+	print(colored('\n\nseleccionando variables:', 'cyan', attrs=['bold']))
+	bar_1 = tqdm(range(n_generations), total=n_generations, unit='iteraciónes')
+	for generation in bar_1:
+		bar_1.set_description('iteración %d de %d' % (generation + 1, n_generations))
 		# start_time = time.time()
-		if((generation + 1) % print_gen == 0): print('generation: %d of %d' % (generation + 1, n_generations))
+		# if((generation + 1) % print_gen == 0): print('generation: %d of %d' % (generation + 1, n_generations))
 		losses = []
 		for villager in villagers:
 			# asure that target variable is in the solution
@@ -138,7 +145,8 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 		# Mutation
 		for i in range(len(cross_over)):
 			for j in range(n_chars):
-				if(np.random.rand() < 5.0/n_chars):
+				#if(np.random.rand() < 5.0/n_chars):
+				if(np.random.rand() < 1.0/10.0):
 					cross_over[i][j] = not(cross_over[i][j])
 
 		# Max vars trim
@@ -163,7 +171,7 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 	df = dataFrame[cols]
 	df.columns = np.array(original_cols)[cols]
 	df.to_csv('data/data_selected.csv')
-	print('se seleccionaron: %d variables' % (df.shape[1]))
+	print('se seleccionaron: ', colored('%d variables' % (df.shape[1]), 'green'), end='\n\n\n')
 
 def select_features_sa(dataFrame, max_vars, original_cols):
 	"""

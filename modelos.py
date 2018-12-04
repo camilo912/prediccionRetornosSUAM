@@ -162,7 +162,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		#print(batch_size, n_epochs, n_hidden, n_lags)
 		print('training...')
 
-		from keras.layers import Dense, Dropout, LSTM
+		from keras.layers import Dense, Dropout, LSTM, RepeatVector, Reshape
 		from keras.models import Sequential
 		from keras.optimizers import Adam
 		from keras import backend as K
@@ -187,9 +187,10 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			#model.add(Dropout(0.5))
 			model.add(Dense(n_out))
 		else:
-			#model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
+			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=False))
+			model.add(RepeatVector(n_out))
 			#model.add(Dense(n_out, input_shape=(n_hidden,)))
-			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True))
+			model.add(LSTM(n_hidden, return_sequences=True))
 			#model.add(Dropout(0.5))
 			#model.add(Dense(n_hidden, activation='relu'))
 			#model.add(Dropout(0.5))
@@ -197,9 +198,11 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			#model.add(Dropout(0.5))
 			#model.add(Dense(n_hidden, activation='relu'))
 			#model.add(Dropout(0.5))
-			model.add(LSTM(n_hidden))
+			#model.add(LSTM(n_hidden))
 			#model.add(Dropout(0.5))
-			model.add(Dense(n_out))
+			model.add(Dense(1))
+			model.add(Reshape((n_out,)))
+
 
 		opt = Adam(lr=0.0001)#, clipvalue=1)#, decay=0.0)
 		model.compile(loss=weighted_mse, optimizer=opt)
@@ -209,6 +212,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
 		if(verbosity > 0):
 			plt.plot(history.history['loss'])
+			plt.suptitle('Training loss')
 			plt.show()
 
 		y_hat_val = model.predict(val_X)
@@ -267,14 +271,16 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			model.add(LSTM(n_hidden, return_sequences=True))
 			#model.add(Dropout(0.5))
 			#model.add(LSTM(n_hidden, return_sequences=True))
+			#model.add(LSTM(n_hidden, return_sequences=True))
 			#model.add(Dropout(0.5))
 			model.add(LSTM(n_hidden))
 			#model.add(Dropout(0.5))
 			model.add(Dense(n_out))
 		else:
-			#model.add(LSTM(n_hidden, input_shape=(n_lags, n_features)))
+			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=False))
+			model.add(RepeatVector(n_out))
 			#model.add(Dense(n_out, input_shape=(n_hidden,)))
-			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True))
+			model.add(LSTM(n_hidden, return_sequences=True))
 			#model.add(Dropout(0.5))
 			#model.add(Dense(n_hidden, activation='relu'))
 			#model.add(Dropout(0.5))
@@ -282,9 +288,10 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			#model.add(Dropout(0.5))
 			#model.add(Dense(n_hidden, activation='relu'))
 			#model.add(Dropout(0.5))
-			model.add(LSTM(n_hidden))
+			#model.add(LSTM(n_hidden))
 			#model.add(Dropout(0.5))
-			model.add(Dense(n_out))
+			model.add(Dense(1))
+			model.add(Reshape((n_out,)))
 
 		opt = Adam(lr=0.0001)#, clipvalue=5)#, decay=0.0)
 		model.compile(loss=weighted_mse, optimizer=opt)
@@ -292,6 +299,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		history = model.fit(whole_X, whole_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
 		if(verbosity > 0):
 			plt.plot(history.history['loss'])
+			plt.suptitle('Whole data loss')
 			plt.show()
 
 		model.save(model_file_name)
