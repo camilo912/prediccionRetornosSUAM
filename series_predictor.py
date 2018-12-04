@@ -61,7 +61,8 @@ class Predictor():
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 250, 15
 				# for SPTR Index
-				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 100, 102, 5, 50 # bayes optim
 				# returns
 				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
 
@@ -128,8 +129,8 @@ class Predictor():
 			feature_selection.select_features_ga(pd.DataFrame(datos), max_vars, original_cols)
 		
 		if(not self.original and not self.evaluating):
-			# df = pd.read_csv('data/data_selected.csv', header=0, index_col=0)
-			df = pd.read_csv('data/data_selected_SPTR.csv', header=0, index_col=0)
+			df = pd.read_csv('data/data_selected.csv', header=0, index_col=0)
+			# df = pd.read_csv('data/data_selected_SPTR.csv', header=0, index_col=0)
 			# df = pd.read_csv('data/forecast-competition-complete_selected.csv', index_col=0)
 			# df = pd.read_csv('data/forecast-competition-complete_selected_manually.csv', index_col=0)
 			self.data_train = df.values
@@ -142,7 +143,7 @@ class Predictor():
 		calc_val_error = False if verbosity < 2 else True
 		calc_test_error = True
 		if(tune):
-			best, results = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, self.scaler, n_features, self.time_steps, self.original, verbosity, model_file_name)
+			best, _ = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, self.scaler, n_features, self.time_steps, self.original, verbosity, model_file_name)
 
 			if(self.id_model == 0):
 				if(model_file_name == None): model_file_name = 'models/lstm_%dtimesteps.h5' % (self.time_steps)

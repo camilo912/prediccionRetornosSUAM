@@ -7,12 +7,6 @@ from sklearn.preprocessing import MinMaxScaler
 
 from matplotlib import pyplot as plt
 
-from hyperopt import fmin
-from hyperopt import tpe
-from hyperopt import Trials
-from hyperopt import hp
-from hyperopt import STATUS_OK
-
 from timeit import default_timer as timer
 
 ID_TO_MODELNAME = {0:'lstm', 1:'randomForest', 2:'adaBoost', 3:'svm', 4:'arima', 5:'lstmNoSW'}
@@ -233,39 +227,9 @@ def calculate_diff_level_for_stationarity(values, scaler, maxi):
 		serie = diff(serie)
 	return maxi
 
-
-# for bayes optimization
-def objective(params, values, scaler, n_series, id_model, n_features, verbosity, model_file_name, MAX_EVALS):
-	"""
-		Función objetivo que sirve para la optimización bayesiana, sirve para ejecuar el modelo con los parámetros recibidos, calcular el error de esta ejecución y así decidir
-		cuales parámetros son mejores.
-
-		Parámetros:
-		- params -- Diccionario, contien los parametros para la ejecución, estos parámetros son dados por la libreria de optimización bayesiana (hyperopt) dentro de un espacio previamente definido
-		- values -- Arreglo de numpy, datos con los cuales se va a entrenar el modelo, es decir, la serie previamente preprocesada
-		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para el escalamiento de los datos y para revertir este escalamiento
-		- n_series -- Entero, número de *time steps*
-		- id_model -- Entero, id del modelo que se va a entrenar
-		- n_features -- Entero, número de *features* de la serie
-		- verbosity -- Entero, nivel de verbosidad de la ejecución
-		- model_file_name -- String, nombre del archivo donde se guardará y/o se cargará el modelo entrenado
-		- MAX_EVALS -- Entero, número máximo  de iteraciones de la optimización bayesiana, en esta función sirve para identificar el archivo de salida en el directorio trials
-
-		Retorna:
-		- diccionario -- Diccioanrio, diccionario que contiene el rmse, los parámetros, la iteración, el tiempo de ejecución y el esatdo de la ejecución. Todo esto es necesario para la libreria
-
-	"""
-	
-	# Keep track of evals
-	global ITERATION
-	
-	ITERATION += 1
-	out_file = 'trials/gbm_trials_' + ID_TO_MODELNAME[id_model] + '_' + str(MAX_EVALS) + '.csv'
-	print(ITERATION, params)
-	
+def objective(params, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name):
 	calc_val_error = True
 	calc_test_error = True
-
 	if(id_model == 0):
 		if(model_file_name == None): model_file_name = 'models/trials-lstm.h5'
 
@@ -277,11 +241,11 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
 		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
 														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
-		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val + (1 - dir_acc)
+		mean = np.mean(test_y)
+		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
 		run_time = timer() - start
-		print('rmse: ', rmse)
-		print('time: ', run_time, end='\n\n')
+		# print('no_score: ', rmse)
+		# print('time: ', run_time, end='\n\n')
 	elif(id_model == 1):
 		if(model_file_name == None): model_file_name = 'models/trials-randomForest.joblib'
 
@@ -293,11 +257,11 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
 		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
 																n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
-		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val + (1 - dir_acc)
+		mean = np.mean(test_y)
+		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
 		run_time = timer() - start
-		print('rmse: ', rmse)
-		print('time: ', run_time, end='\n\n')
+		# print('no_score: ', rmse)
+		# print('time: ', run_time, end='\n\n')
 	elif(id_model == 2):
 		if(model_file_name == None): model_file_name = 'models/trials-adaBoost.joblib'
 		# Make sure parameters that need to be integers are integers
@@ -308,11 +272,11 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
 		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
 															params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
-		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val + (1 - dir_acc)
+		mean = np.mean(test_y)
+		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
 		run_time = timer() - start
-		print('rmse: ', rmse)
-		print('time: ', run_time, end='\n\n')
+		# print('no_score: ', rmse)
+		# print('time: ', run_time, end='\n\n')
 	elif(id_model == 3):
 		if(model_file_name == None): model_file_name = 'models/trials-svm.joblib'
 		# Make sure parameters that need to be integers are integers
@@ -322,12 +286,12 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
 		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
-													verbosity, False, None, model_file_name)
-		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val + (1 - dir_acc)
+													verbosity, False, model_file_name)
+		mean = np.mean(test_y)
+		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
 		run_time = timer() - start
-		print('rmse: ', rmse)
-		print('time: ', run_time, end='\n\n')
+		# print('no_score: ', rmse)
+		# print('time: ', run_time, end='\n\n')
 	elif(id_model == 4):
 		if(model_file_name == None): model_file_name = 'models/arima.pkl'
 		# Make sure parameters that need to be integers are integers
@@ -342,101 +306,60 @@ def objective(params, values, scaler, n_series, id_model, n_features, verbosity,
 		start = timer()
 		rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
 														calc_test_error, verbosity, False, model_file_name)
-		# rmse = rmse*0.7 + rmse_val*0.3
-		rmse = rmse_val + (1 - dir_acc)
+		mean = np.mean(test_y)
+		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
 		run_time = timer() - start
-		print('rmse: ', rmse)
-		print('time: ', run_time, end='\n\n')
+		# print('no_score: ', rmse)
+		# print('time: ', run_time, end='\n\n')
 
-	# Write to the csv file ('a' means append)
-	of_connection = open(out_file, 'a')
-	writer = csv.writer(of_connection)
-	writer.writerow([rmse, params, ITERATION, run_time])
-	of_connection.close()
-
-	# Dictionary with information for evaluation
-	return {'loss': rmse, 'params': params, 'iteration': ITERATION,
-			'train_time': run_time, 'status': STATUS_OK}
+	return -1 * rmse
 
 def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name):
-	"""
-		Función para encontrar los parámetros optimos para un modelo
-
-		Parámetros:
-		- id_model -- Entero, id del modelo que se va a entrenar
-		- MAX_EVALS -- Entero, número máximo  de iteraciones de la optimización bayesiana
-		- values -- Arreglo de numpy, datos con los cuales se va a entrenar el modelo, es decir, la serie previamente preprocesada
-		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para el escalamiento de los datos y para revertir este escalamiento
-		- n_features -- Entero, número de *features* de la serie
-		- n_series -- Entero, número de *time steps*
-		- original -- Booleano, denota si se van a usar los *features* originales de la serie o los *features* seleccionados, en esta función sirve para identificar el archivo de salida
-		- verbosity -- Entero, nivel de verbosidad de la ejecución
-		- model_file_name -- String, nombre del archivo donde se guardará y/o se cargará el modelo entrenado
-
-		Retorna: 
-		- best -- Diccionario, diccionario con los mejores parámetros encontrados en la optimización bayesiana
-		- bayes_trails_results -- Lista, Lista con los resultados de todas las iteraciones del proceso ordenadas según el rmse
-
-	"""
-	global ITERATION
-	ITERATION = 0
-
+	from bayes_opt import BayesianOptimization
 	if(id_model == 0):
-		# space
-		# big
-		space = {'n_lags': hp.quniform('n_lags', 1, min(50, int(len(values)/2)), 1),
-				'n_epochs': hp.quniform('n_epochs', 10, 200, 1),
-				'batch_size': hp.quniform('batch_size', 5, 100, 1),
-				'n_hidden': hp.quniform('n_hidden', 5, 300, 1)}
+		space = {'batch_size': (5, 100),
+				'n_epochs': (10, 200),
+				'n_hidden': (5, 300),
+				'n_lags': (1, (min(50, int(len(values)/2))))}
+		func = lambda batch_size, n_epochs, n_hidden, n_lags: objective({'batch_size': batch_size, 'n_epochs': n_epochs, 'n_hidden': n_hidden, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
 	elif(id_model == 1):
-		space = {'n_lags': hp.quniform('n_lags', 1, min(50, int(len(values)/2)), 1),
-				'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
-				'max_features': hp.quniform('max_features', 1, n_features, 1),
-				'min_samples': hp.quniform('min_samples', 1, 20, 1)}
+		space = {'max_features': (1, n_features),
+				'min_samples': (1, 20),
+				'n_estimators': (10, 1000),
+				'n_lags': (1, min(50, int(len(values)/2)))}
+		func = lambda max_features, min_samples, n_estimators, n_lags: objective({'max_features': max_features, 'min_samples': min_samples, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
 	elif(id_model == 2):
-		space = {'n_lags': hp.quniform('n_lags', 1, min(50, int(len(values)/2)), 1),
-				'n_estimators': hp.quniform('n_estimators', 10, 1000, 1),
-				'lr': hp.uniform('lr', 0.00001, 1.0),
-				'max_depth': hp.quniform('max_depth', 2, 10, 1)}
+		space = {'lr': (0.00001, 1.0),
+				'max_depth': (2, 10),
+				'n_estimators': (10, 1000),
+				'n_lags': (1, min(50, int(len(values)/2)))}
+		func = lambda lr, max_depth, n_estimators, n_lags: objective({'lr':lr, 'max_depth': max_depth, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
 	elif(id_model == 3):
-		space = {'n_lags': hp.quniform('n_lags', 1, min(50, int(len(values)/2)), 1)}
+		space = {'n_lags': (1, min(50, int(len(values)/2)))}
+		func = lambda  n_lags: objective({'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
 	elif(id_model == 4):
 		diff_level = calculate_diff_level_for_stationarity(values, scaler, 5)
-		space={'n_lags': hp.quniform('n_lags', 1, 12, 1),
-				'd': hp.quniform('d', diff_level, diff_level, 1),
-				'q': hp.quniform('q', 1, 12, 1)}
+		space={'n_lags': (1, 12),
+				'q': (1, 12)}
+		func = lambda  n_lags, q: objective({'d': diff_level, 'n_lags': n_lags, 'q': q}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
 
-	# Keep track of results
-	bayes_trials = Trials()
-
-	# File to save first results
-	out_file = 'trials/gbm_trials_' + ID_TO_MODELNAME[id_model] + '_' + str(MAX_EVALS) + '.csv'
-	of_connection = open(out_file, 'w')
-	writer = csv.writer(of_connection)
-
-	# Write the headers to the file
-	writer.writerow(['id_model: ' + str(id_model), 'original: ' + str(original)])
-	writer.writerow(['rmse', 'params', 'iteration', 'train_time'])
-	of_connection.close()
-
-	# Run optimization
-	best = fmin(fn = lambda x: objective(x, values, scaler, n_series, id_model, n_features, verbosity, model_file_name, MAX_EVALS), space = space, algo = tpe.suggest, max_evals = MAX_EVALS, trials = bayes_trials, rstate = np.random.RandomState(np.random.randint(100)))
-
-	# store best results
-	of_connection = open('trials/bests.txt', 'a')
-	writer = csv.writer(of_connection)
-	bayes_trials_results = sorted(bayes_trials.results, key = lambda x: x['loss'])
+	optimizer = BayesianOptimization(f=func, pbounds=space, verbose=2, random_state=np.random.randint(np.random.randint(100)))
 	if(id_model == 0):
-		writer.writerow([bayes_trials_results[0]['loss'], bayes_trials_results[0]['params']['batch_size'], bayes_trials_results[0]['params']['n_epochs'], bayes_trials_results[0]['params']['n_hidden'], bayes_trials_results[0]['params']['n_lags'], MAX_EVALS])
-	elif(id_model == 1):
-		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], best['n_estimators'], best['max_features'], best['min_samples'], MAX_EVALS])
-	elif(id_model == 2):
-		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], best['n_estimators'], best['lr'], best['max_depth'], MAX_EVALS])
-	elif(id_model == 3):
-		writer.writerow([bayes_trials_results[0]['loss'], best['n_lags'], MAX_EVALS])
-	of_connection.close()
+		optimizer.probe(params={'batch_size':10.0, 'n_epochs':300.0, 'n_hidden':50.0, 'n_lags':10.0})
+		optimizer.probe(params={'batch_size':81.0, 'n_epochs':200.0, 'n_hidden':250.0, 'n_lags':15.0})
+		optimizer.probe(params={'batch_size':81.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':9.0})
+		optimizer.probe(params={'batch_size':81.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':25.0})
+	optimizer.maximize(init_points=2, n_iter=MAX_EVALS)
 
-	return best, bayes_trials_results
+	if(id_model == 4):
+		dic = optimizer.max['params']
+		dic.update({'d': diff_level})
+		return dic, None
+
+	return optimizer.max['params'], None
+
+
+
 
 def get_direction_accuracy(y, y_hat):
 	"""

@@ -160,7 +160,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 	
 	if(not saved_model):
 		#print(batch_size, n_epochs, n_hidden, n_lags)
-		print('training...')
+		# print('training...')
 
 		from keras.layers import Dense, Dropout, LSTM, RepeatVector, Reshape
 		from keras.models import Sequential
@@ -306,9 +306,9 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 
 		model.save(model_file_name)
 
-		pats = model.predict(whole_X)
-		print('rmse total training: ', utils.calculate_rmse(pats, whole_y))
-		print('direction accuracy total training: ', utils.get_direction_accuracy(pats, whole_y))
+		#pats = model.predict(whole_X)
+		#print('rmse total training: ', utils.calculate_rmse(pats, whole_y))
+		#print('direction accuracy total training: ', utils.get_direction_accuracy(pats, whole_y))
 
 		# predict last
 		last = model.predict(np.expand_dims(last_values, axis=0))
@@ -385,7 +385,7 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 	"""
 	from sklearn.externals import joblib
 	if(not saved_model):
-		print('training...')
+		# print('training...')
 		from sklearn.ensemble import RandomForestRegressor
 
 		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
@@ -461,7 +461,7 @@ def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_
 	"""
 	from sklearn.externals import joblib
 	if(not saved_model):
-		print('training...')
+		# print('training...')
 		from sklearn.ensemble import AdaBoostRegressor
 		from sklearn.tree import DecisionTreeRegressor
 
@@ -535,7 +535,7 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 	"""
 	from sklearn.externals import joblib
 	if(not saved_model):
-		print('training...')
+		# print('training...')
 		from sklearn.svm import SVR
 
 		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
@@ -622,7 +622,7 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 	y_hat_val = []
 	try:
 		if(not saved_model):
-			print('training...')
+			# print('training...')
 			verbose = 0 if verbosity < 3 else verbosity - 2
 			model = SARIMAX(train_X[:, 0], exog=train_X[:, 1:], order=(n_lags, d, q), enforce_invertibility=False, enforce_stationarity=False, dynamic=False)
 			model_fit = model.fit(disp=verbose, iprint=verbose, maxiter=200, method='powell')
@@ -695,6 +695,7 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 			dir_acc = None
 
 	except (ValueError, LinAlgError) as exc:
+		print('algo sucedió: ')
 		print(exc)
 		return 9e+10, 9e+10, None, None, None, None, None, 0, None
 
