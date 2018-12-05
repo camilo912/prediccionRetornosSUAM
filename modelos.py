@@ -117,7 +117,7 @@ def weighted_mse(yTrue, yPred):
 
 	return K.mean((1/idx)*K.square(yTrue-yPred))
 
-def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name):
+def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, n_rnn, n_dense, activation, drop_p):
 	"""
 		
 		Función para crear, entrenar y calcular el error del modelo LSTM, también sirve para predecir
@@ -143,6 +143,10 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		- verbosity -- Entero, nivel de verbosidad de la ejecución del modelo, entre más alto más información se mostrará el límite es 4 y debe ser mayor o igual a 0
 		- saved_model -- Booleano, indica si se desea entrenar el modelo o cargar uno guardado. Si True se carga un modelo guardado, si False se entrena un nuevo modelo.
 		- model_file_name -- *String*, nombre del archivo donde se guardará y/o se cargará el modelo.
+		- n_rnn -- Entero, cantidad de redes neuronales recurrentes a usar antes de la por default
+		- n_dense -- Entero, cantidad de capas densas a usar antes de la capa densa de salida
+		- activation -- Entero, id de la activación que se quiere usar 0 para tanh, 1 para relu, se pueden agregar más
+		- drop_p -- Flotante, porcentaje de las neuronas a volver 0 en la capa de dropout número entre 0 y 1
 
 		Retorna:
 		- rmse -- Flotante, raíz del error medio cuadrático de *testing*; retorna None si calc_test_error es False
@@ -152,7 +156,8 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		- val_y -- Arreglo de numpy, observaciones de la particón de validación en escala real
 		- y_hat_val -- Arreglo de numpy, predicciones de la partición de validación en escala real
 		- last -- Arreglo de numpy, predicción de los últimos valores
-		- [valor] -- Flotante, % de acierto en la dirección
+		- dir_acc-- Flotante, % de acierto en la dirección
+		- model -- Modelo, instancia de modelo de keras, retorna el modeo entrenado
 
 
 	"""
@@ -168,6 +173,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		from keras import backend as K
 
 		verbose_dict = {0:0, 1:2, 2:1}
+		activation_dict = {0:'tanh', 1:'relu'}
 		verbose = 0 if verbosity < 3 else min(verbosity - 2, 2)
 		verbose = verbose_dict[verbose]
 
@@ -178,37 +184,27 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		K.clear_session()
 		model = Sequential()
 		if(n_series == 1):
-			#model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=True, activation='relu'))
-			#model.add(LSTM(n_hidden, return_sequences=True))
-			#model.add(Dropout(0.5))
-			#model.add(LSTM(n_hidden, return_sequences=True))
-			#model.add(Dropout(0.5))
-			model.add(LSTM(n_hidden, activation='relu'))
-			#model.add(Dropout(0.5))
+			for i in range(n_rnn):
+				model.add(LSTM(n_hidden, return_sequences=True, activation=activation_dict[activation]))
+				model.add(Dropout(drop_p))
+			model.add(LSTM(n_hidden, activation=activation_dict[activation]))
+			for i in range(n_dense):
+				model.add(Dense(n_hidden))
 			model.add(Dense(n_out))
 		else:
-			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=False))
+			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=False, activation=activation_dict[activation]))
 			model.add(RepeatVector(n_out))
-			#model.add(Dense(n_out, input_shape=(n_hidden,)))
-			model.add(LSTM(n_hidden, return_sequences=True))
-			#model.add(Dropout(0.5))
-			#model.add(Dense(n_hidden, activation='relu'))
-			#model.add(Dropout(0.5))
-			#model.add(LSTM(n_hidden, return_sequences=True))
-			#model.add(Dropout(0.5))
-			#model.add(Dense(n_hidden, activation='relu'))
-			#model.add(Dropout(0.5))
-			#model.add(LSTM(n_hidden))
-			#model.add(Dropout(0.5))
+			for i in range(n_rnn):
+				model.add(LSTM(n_hidden, return_sequences=True, activation=activation_dict[activation]))
+				model.add(Dropout(drop_p))
+			for i in range(n_dense):
+				model.add(Dense(n_hidden))	
 			model.add(Dense(1))
 			model.add(Reshape((n_out,)))
 
 
-		opt = Adam(lr=0.001, clipvalue=0.005, decay=0.005)
+		opt = Adam(lr=0.001)#, clipvalue=0.005, decay=0.005)
 		model.compile(loss=weighted_mse, optimizer=opt)
-		# model.compile(loss=lambda yTrue, yPred: K.mean((1/K.cumsum(K.ones_like(yTrue[0,:])))*K.square(yTrue-yPred)), optimizer=opt)
-		# model.compile(loss='mse', optimizer=opt)
-		#w_ini = model.get_weights()
 		history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
 		if(verbosity > 0):
 			plt.figure()
@@ -223,8 +219,6 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			# for validation
 			rmses_val = []
 			rmse_val = 0
-			#weigth = 1.0
-			#step = 0.1
 			for i in range(n_out):
 				tmp = np.zeros((len(y_hat_val[:, i].ravel()), n_features))
 				tmp[:, 0] = y_hat_val[:, i].ravel()
@@ -235,8 +229,6 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 				val_y[:, i] = scaler.inverse_transform(tmp)[:, 0]
 
 				rmses_val.append(math.sqrt(mean_squared_error(val_y[:, i], y_hat_val[:, i])))
-				#rmse_val += rmses_val[-1]*weigth
-				#weigth -= step
 			rmse_val = np.mean(rmses_val)
 		else:
 			rmse_val = None
@@ -245,8 +237,6 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			# for test
 			rmses = []
 			rmse = 0
-			#weigth = 1.5
-			#step = 0.1
 			for i in range(n_out):
 				tmp = np.zeros((len(y_hat_test[:, i].ravel()), n_features))
 				tmp[:, 0] = y_hat_test[:, i].ravel()
@@ -257,44 +247,32 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 				test_y[:, i] = scaler.inverse_transform(tmp)[:, 0]
 
 				rmses.append(math.sqrt(mean_squared_error(test_y[:, i], y_hat_test[:, i])))
-				#rmse += rmses[-1]*weigth
-				#weigth -= step
 			rmse = np.mean(rmses)
 		else:
 			rmse = None
 
-		# # reset model weights
-		# model.set_weights(w_ini)
-
 		K.clear_session()
 		model = Sequential()
 		if(n_series == 1):
-			#model.add(LSTM(n_hidden, return_sequences=True, activation='relu'))
-			#model.add(Dropout(0.5))
-			#model.add(LSTM(n_hidden, return_sequences=True))
-			#model.add(LSTM(n_hidden, return_sequences=True))
-			#model.add(Dropout(0.5))
-			model.add(LSTM(n_hidden, activation='relu'))
-			#model.add(Dropout(0.5))
+			for i in range(n_rnn):
+				model.add(LSTM(n_hidden, return_sequences=True, activation=activation_dict[activation]))
+				model.add(Dropout(drop_p))
+			model.add(LSTM(n_hidden, activation=activation_dict[activation]))
+			for i in range(n_dense):
+				model.add(Dense(n_hidden))
 			model.add(Dense(n_out))
 		else:
-			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=False))
+			model.add(LSTM(n_hidden, input_shape=(n_lags, n_features), return_sequences=False, activation=activation_dict[activation]))
 			model.add(RepeatVector(n_out))
-			#model.add(Dense(n_out, input_shape=(n_hidden,)))
-			model.add(LSTM(n_hidden, return_sequences=True))
-			#model.add(Dropout(0.5))
-			#model.add(Dense(n_hidden, activation='relu'))
-			#model.add(Dropout(0.5))
-			#model.add(LSTM(n_hidden, return_sequences=True))
-			#model.add(Dropout(0.5))
-			#model.add(Dense(n_hidden, activation='relu'))
-			#model.add(Dropout(0.5))
-			#model.add(LSTM(n_hidden))
-			#model.add(Dropout(0.5))
+			for i in range(n_rnn):
+				model.add(LSTM(n_hidden, return_sequences=True, activation=activation_dict[activation]))
+				model.add(Dropout(drop_p))
+			for i in range(n_dense):
+				model.add(Dense(n_hidden))	
 			model.add(Dense(1))
 			model.add(Reshape((n_out,)))
 
-		opt = Adam(lr=0.001, clipvalue=0.005, decay=0.005)
+		opt = Adam(lr=0.001)#, clipvalue=0.005, decay=0.005)
 		model.compile(loss=weighted_mse, optimizer=opt)
 
 		history = model.fit(whole_X, whole_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
@@ -317,13 +295,14 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		tmp[:, 0] = last
 		last = scaler.inverse_transform(tmp)[:, 0]
 
-		dir_acc = utils.get_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
+		# para valores
+		# dir_acc = utils.get_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
+		# para retornos
+		dir_acc = utils.get_returns_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
 	
 	else:
 		from keras.models import load_model
 		model = load_model(model_file_name, custom_objects={'weighted_mse': weighted_mse})
-		model.fit(test_X[[-1]], test_y[[-1]], epochs=1, batch_size=1, verbose=0, shuffle=False)
-		model.save(model_file_name)
 
 		last = model.predict(np.expand_dims(last_values, axis=0))
 

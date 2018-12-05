@@ -39,33 +39,41 @@ class Predictor():
 		self.time_steps = time_steps
 		self.data_train = data_train
 		self.original_cols = original_cols
-		self.retrain_cont = 0
-		self.retrain_rate = 10
-		self.evaluating = False
+		self.retrain_cont = 0 # contador de iteraciones para reentrenar
+		self.retrain_rate = 10 # taza de reentreno para modelos que se necesiten reentrenar
+		self.evaluating = False # parámetro para saber si el paso de training se hace al principio o luego cuando se está evaluando
 
 		if(self.id_model == 0 and self.time_steps > 0):
-			if(self.original):
-				self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28 
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 26, 181, 39, 3
-				
+			if(time_steps == 1):
+				if(self.original):
+					self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
+					self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28 
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 26, 181, 39, 3
+					
+				else:
+					self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
+					# for IDCOT3TR_Index
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 100, 269, 9
+					# for IBOXIG Index
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+					# for IBOXHY_Index
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+					# for GBIEMCOR Index
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 9
+					# for JPEICORE Index
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 250, 15
+					# for SPTR Index
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 100, 102, 5, 50 # bayes optim
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 44, 32, 207, 22 # bayes optim 2
+					# returns
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 79, 90, 44, 28 # bayes optim
+					self.n_rnn, self.n_dense, self.activation, self.drop_p = 2, 1, 1, 0.1529 # bayes optim 2
+					self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 75, 158, 45, 43 # bayes optim 2
 			else:
-				# for IDCOT3TR_Index
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 100, 269, 9
-				# for IBOXIG Index
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
-				# for IBOXHY_Index
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
-				# for GBIEMCOR Index
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 9
-				# for JPEICORE Index
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 250, 15
-				# for SPTR Index
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
-				self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 100, 102, 5, 50 # bayes optim
-				# returns
-				# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
-
+				raise Exception('falta esto')
 		
 		elif(self.id_model == 1 and self.time_steps == 1):
 			if(self.original):
@@ -143,19 +151,20 @@ class Predictor():
 		calc_val_error = False if verbosity < 2 else True
 		calc_test_error = True
 		if(tune):
-			best, _ = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, self.scaler, n_features, self.time_steps, self.original, verbosity, model_file_name)
+			best = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, self.scaler, n_features, self.time_steps, self.original, verbosity, model_file_name)
 
 			if(self.id_model == 0):
 				if(model_file_name == None): model_file_name = 'models/lstm_%dtimesteps.h5' % (self.time_steps)
 				# Parameters
 				self.n_lags, self.n_epochs, self.batch_size, self.n_hidden = int(best['n_lags']), int(best['n_epochs']), int(best['batch_size']), int(best['n_hidden'])
+				self.n_rnn, self.n_dense, self.activation, self.drop_p = int(best['n_rnn']), int(best['n_dense']), int(best['activation']), best['drop_p']
 				f = open('parameters/optimized_lstm_%dtimesteps.pars' % self.time_steps, 'w')
 				f.write('%d, %d, %d, %d\n' % (self.n_lags, self.n_epochs, self.batch_size, self.n_hidden))
 				f.close()
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
 				
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_epochs, self.batch_size, self.n_hidden, n_features, self.n_lags, 
-																self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
+																self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, self.n_rnn, self.n_dense, self.activation, self.drop_p)
 				
 				print('rmse: %s ' % rmse)
 
@@ -294,7 +303,7 @@ class Predictor():
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_epochs, self.batch_size, 
 																									self.n_hidden, n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, 
-																									verbosity, saved_model, model_file_name)
+																									verbosity, saved_model, model_file_name, self.n_rnn, self.n_dense, self.activation, self.drop_p)
 				print('time elapsed: ', timer() - start)
 
 				if(not saved_model):

@@ -57,15 +57,15 @@ def main():
 	model_file_name = None # 'models/lstm-noSW-prueba.h5'
 
 	#input_file_name = 'data/forecast-competition-complete.csv'
-	# input_file_name = 'data/data_16_11_2018_differentiated.csv'
-	input_file_name = 'data/data_16_11_2018.csv'
+	input_file_name = 'data/data_16_11_2018_differentiated.csv'
+	# input_file_name = 'data/data_16_11_2018.csv'
 	# input_file_name = 'data/data_returns.csv'
 	dataframe = pd.read_csv(input_file_name, header=0, index_col=0)
 	df = pd.DataFrame()
-	output_file_name = 'results/salida_' + str(time_steps) + '_periodos.csv'
-	# output_file_name = 'results/salida_' + str(time_steps) + '_periodos_SPTR.csv'
+	# output_file_name = 'results/salida_' + str(time_steps) + '_periodos.csv'
+	output_file_name = 'results/salida_' + str(time_steps) + '_periodos_SPTR.csv'
 
-	# chose the feature to predict
+	# choose the feature to predict
 	predicting = 0
 	cols = dataframe.columns
 	predicting = cols[predicting]
@@ -80,8 +80,8 @@ def main():
 	rango = maxi - mini
 
 	p = []
-	ini = 201
-	fin = 226
+	ini = 200
+	fin = 225
 	step = 1 # time_steps
 
 	train, _ = split_data(dataframe.values, ini)
@@ -118,7 +118,8 @@ def main():
 	preds = np.array(p).ravel()
 	tam = min(len(preds), len(datos))
 	print('real rmse: ', utils.calculate_rmse(datos[:tam, 0], preds[:tam]))
-	print('real direction accuracy: %f%%' % (utils.get_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
+	# print('real direction accuracy: %f%%' % (utils.get_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
+	print('real direction accuracy: %f%%' % (utils.get_returns_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
 	#plt.plot(datos[:, 0], marker='*', linestyle='-.', label='observations', lw=10)
 	plt.plot(datos[:, 0], label='observations', lw=10)
 	if(time_steps > 1):

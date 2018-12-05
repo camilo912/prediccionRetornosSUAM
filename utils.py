@@ -159,7 +159,7 @@ def plot_data(data, labels, title):
 	for i in range(len(data)):
 		plt.plot(data[i], label=labels[i])
 	plt.suptitle(title, fontsize=16)
-	plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=2)
+	plt.legend()
 	plt.show()
 
 def plot_data_lagged_blocks(data, labels, title):
@@ -227,20 +227,35 @@ def calculate_diff_level_for_stationarity(values, scaler, maxi):
 		serie = diff(serie)
 	return maxi
 
-def objective(params, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name):
+def objective(params, id_model, values, scaler, n_features, n_series, verbosity, model_file_name):
+	"""
+		Función objetivo que sirve para la optimización bayesiana, sirve para ejecuar el modelo con los parámetros recibidos, calcular el error de esta ejecución y así decidir
+		cuales parámetros son mejores.
+		Parámetros:
+		- params -- Diccionario, contien los parametros para la ejecución, estos parámetros son dados por la libreria de optimización bayesiana (hyperopt) dentro de un espacio previamente definido
+		- id_model -- Entero, id del modelo que se va a entrenar
+		- values -- Arreglo de numpy, datos con los cuales se va a entrenar el modelo, es decir, la serie previamente preprocesada
+		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para el escalamiento de los datos y para revertir este escalamiento
+		- n_features -- Entero, número de *features* de la serie
+		- n_series -- Entero, número de *time steps*
+		- verbosity -- Entero, nivel de verbosidad de la ejecución
+		- model_file_name -- String, nombre del archivo donde se guardará y/o se cargará el modelo entrenado
+		Retorna:
+		- [valor] -- Flotante, dicconario qu retorna la "recompensa" de esta ejecuión, la idea esmaximizarla, por eso el "error" de la ejecución se invierte
+	"""
 	calc_val_error = True
 	calc_test_error = True
 	if(id_model == 0):
 		if(model_file_name == None): model_file_name = 'models/trials-lstm.h5'
 
 		# Make sure parameters that need to be integers are integers
-		for parameter_name in ['n_lags', 'n_epochs', 'batch_size', 'n_hidden']:
+		for parameter_name in ['n_lags', 'n_epochs', 'batch_size', 'n_hidden', 'n_dense', 'n_rnn', 'activation']:
 			params[parameter_name] = int(params[parameter_name])
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
 		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
-														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
+														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name, params['n_rnn'], params['n_dense'], params['activation'], params['drop_p'])
 		mean = np.mean(test_y)
 		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
 		run_time = timer() - start
@@ -315,48 +330,80 @@ def objective(params, id_model, values, scaler, n_features, n_series, original, 
 	return -1 * rmse
 
 def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name):
+	"""
+		Función para encontrar los parámetros optimos para un modelo
+		Parámetros:
+		- id_model -- Entero, id del modelo que se va a entrenar
+		- MAX_EVALS -- Entero, número máximo  de iteraciones de la optimización bayesiana
+		- values -- Arreglo de numpy, datos con los cuales se va a entrenar el modelo, es decir, la serie previamente preprocesada
+		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para el escalamiento de los datos y para revertir este escalamiento
+		- n_features -- Entero, número de *features* de la serie
+		- n_series -- Entero, número de *time steps*
+		- original -- Booleano, denota si se van a usar los *features* originales de la serie o los *features* seleccionados, en esta función serviría para identificar el archivo de salida
+		- verbosity -- Entero, nivel de verbosidad de la ejecución
+		- model_file_name -- String, nombre del archivo donde se guardará y/o se cargará el modelo entrenado
+		Retorna: 
+		- best -- Diccionario, diccionario con los mejores parámetros encontrados en la optimización bayesiana
+	"""
 	from bayes_opt import BayesianOptimization
 	if(id_model == 0):
-		space = {'batch_size': (5, 100),
+		space = {'activation': (0.1, 1.9),
+				'batch_size': (5, 100),
+				'drop_p': (0, 1),
+				'n_dense': (0, 5),
 				'n_epochs': (10, 200),
 				'n_hidden': (5, 300),
-				'n_lags': (1, (min(50, int(len(values)/2))))}
-		func = lambda batch_size, n_epochs, n_hidden, n_lags: objective({'batch_size': batch_size, 'n_epochs': n_epochs, 'n_hidden': n_hidden, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
+				'n_lags': (1, (min(50, int(len(values)/2)))),
+				'n_rnn': (0, 4)}
+		func = lambda activation, batch_size, drop_p, n_dense, n_epochs, n_hidden, n_lags, n_rnn: objective({'activation':activation , 'batch_size':batch_size, 'drop_p':drop_p, 'n_dense':n_dense, 'n_epochs':n_epochs, 'n_hidden':n_hidden, 'n_lags':n_lags, 'n_rnn':n_rnn}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
 	elif(id_model == 1):
 		space = {'max_features': (1, n_features),
 				'min_samples': (1, 20),
 				'n_estimators': (10, 1000),
 				'n_lags': (1, min(50, int(len(values)/2)))}
-		func = lambda max_features, min_samples, n_estimators, n_lags: objective({'max_features': max_features, 'min_samples': min_samples, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
+		func = lambda max_features, min_samples, n_estimators, n_lags: objective({'max_features': max_features, 'min_samples': min_samples, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
 	elif(id_model == 2):
 		space = {'lr': (0.00001, 1.0),
 				'max_depth': (2, 10),
 				'n_estimators': (10, 1000),
 				'n_lags': (1, min(50, int(len(values)/2)))}
-		func = lambda lr, max_depth, n_estimators, n_lags: objective({'lr':lr, 'max_depth': max_depth, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
+		func = lambda lr, max_depth, n_estimators, n_lags: objective({'lr':lr, 'max_depth': max_depth, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
 	elif(id_model == 3):
 		space = {'n_lags': (1, min(50, int(len(values)/2)))}
-		func = lambda  n_lags: objective({'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
+		func = lambda  n_lags: objective({'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
 	elif(id_model == 4):
 		diff_level = calculate_diff_level_for_stationarity(values, scaler, 5)
 		space={'n_lags': (1, 12),
 				'q': (1, 12)}
-		func = lambda  n_lags, q: objective({'d': diff_level, 'n_lags': n_lags, 'q': q}, id_model, values, scaler, n_features, n_series, original, verbosity, model_file_name)
+		func = lambda  n_lags, q: objective({'d': diff_level, 'n_lags': n_lags, 'q': q}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
 
 	optimizer = BayesianOptimization(f=func, pbounds=space, verbose=2, random_state=np.random.randint(np.random.randint(100)))
 	if(id_model == 0):
-		optimizer.probe(params={'batch_size':10.0, 'n_epochs':300.0, 'n_hidden':50.0, 'n_lags':10.0})
-		optimizer.probe(params={'batch_size':81.0, 'n_epochs':200.0, 'n_hidden':250.0, 'n_lags':15.0})
-		optimizer.probe(params={'batch_size':81.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':9.0})
-		optimizer.probe(params={'batch_size':81.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':25.0})
+		optimizer.probe(params={'activation':1.0, 'batch_size':10.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':300.0, 'n_hidden':50.0, 'n_lags':10.0, 'n_rnn':0.0})
+		optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':250.0, 'n_lags':15.0, 'n_rnn':0.0})
+		optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':9.0, 'n_rnn':0.0})
+		optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':25.0, 'n_rnn':0.0})
 	optimizer.maximize(init_points=2, n_iter=MAX_EVALS)
 
-	if(id_model == 4):
-		dic = optimizer.max['params']
-		dic.update({'d': diff_level})
-		return dic, None
 
-	return optimizer.max['params'], None
+	# store best results
+	best = optimizer.max['params']
+	of_connection = open('trials/bests.txt', 'a')
+	writer = csv.writer(of_connection)
+	if(id_model == 0):
+		writer.writerow([optimizer.max['target'], best['activation'], best['batch_size'], best['drop_p'], best['n_dense'], best['n_epochs'], best['n_hidden'], obest['n_lags'], best['n_rnn'], MAX_EVALS])
+	elif(id_model == 1):
+		writer.writerow([optimizer.max['target'], best['n_lags'], best['n_estimators'], best['max_features'], best['min_samples'], MAX_EVALS])
+	elif(id_model == 2):
+		writer.writerow([optimizer.max['target'], best['n_lags'], best['n_estimators'], best['lr'], best['max_depth'], MAX_EVALS])
+	elif(id_model == 3):
+		writer.writerow([optimizer.max['target'], best['n_lags'], MAX_EVALS])
+	elif(id_model == 4):
+		best.update({'d': diff_level})
+		writer.writerow([optimizer.max['target'], best['d'], best['n_lags'], best['q'], MAX_EVALS])
+	of_connection.close()
+
+	return best
 
 
 
@@ -372,14 +419,53 @@ def get_direction_accuracy(y, y_hat):
 
 		Retorna:
 		- [valor] -- % de aciertos en la dirección
-
-		
 	"""
+	assert len(y) == len(y_hat)
 	y_dirs = [1 if y[i] < y[i+1] else 0 for i in range(len(y) - 1)]
 	y_hat_dirs = [1 if y_hat[i] < y_hat[i+1] else 0 for i in range(len(y_hat) - 1)]
 	return sum(np.array(y_dirs) == np.array(y_hat_dirs))/len(y)
 
+def get_returns_direction_accuracy(y, y_hat):
+	"""
+		Función para calcular el % de aciertos en la dirección de retornos, teniendo en cuenta las observaciones y las predicciones.
+		Por dirección se entiende que si en la observación el valor sube, en la predicción también lo haga. De igual forma en el caso de que baje.
+
+		Parámetros:
+		- y -- Arreglo de numpy, las observaciones
+		- y_hat -- Arreglo de numpy, las predicciones
+
+		Retorna:
+		- [valor] -- % de aciertos en la dirección
+	"""
+	assert len(y) == len(y_hat)
+	y_dirs = [1 if y[i]>0 else 0 for i in range(len(y))]
+	y_hat_dirs = [1 if y_hat[i]>0 else 0 for i in range(len(y_hat))]
+	return sum(np.array(y_dirs) == np.array(y_hat_dirs))/len(y)
+
+def get_returns_values_direction_accuracy(values, returns):
+	"""
+		Función para calcular el % de aciertos en la dirección de retornos teniendo una serie en valores y otra en retornos, teniendo en cuenta las observaciones y las predicciones.
+		Por dirección se entiende que si en la observación el valor sube, en la predicción también lo haga. De igual forma en el caso de que baje.
+
+		Parámetros:
+		- values -- Arreglo de numpy, serie de valores
+		- returns -- Arreglo de numpy, serie de retornos
+		Retorna:
+		- [valor] -- % de aciertos en la dirección
+	"""
+	assert len(values) == len(returns) + 1
+	values_dirs = [1 if values[i] < values[i+1] else 0 for i in range(len(values) - 1)]
+	returns_dirs = [1 if returns[i]>0 else 0 for i in range(len(returns))]
+	return sum(np.array(values_dirs) == np.array(returns_dirs))/len(returns)
+
 def calculate_rmse(y, y_hat):
+	"""
+		Función que calcula el rmse (raiz del error medio cuadrático) entre dos arreglos de datos
+
+		Parámetros:
+		- y -- Arreglo de numpy | Lista, serie de observaciones o valores reales
+		- y_hat -- Arreglo de numpy | Lista, serie de predicciones 
+	"""
 	assert len(y) == len(y_hat)
 	from sklearn.metrics import mean_squared_error
 	return np.sqrt(mean_squared_error(y, y_hat))

@@ -27,7 +27,7 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 
 		Retorna:
 		NADA
-		(no retorna nada pero escribe las variables seleccioandas en el archivo 'forecast-competition-complete_selected.csv' en el directorio data)
+		(no retorna nada pero escribe las variables seleccioandas en el archivo 'data_selected.csv' en el directorio data)
 
 	"""
 	n_features = dataFrame.shape[1]
@@ -75,7 +75,7 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 
 		Retorna:
 		NADA
-		(no retorna nada pero escribe las variables seleccioandas en el archivo 'forecast-competition-complete_selected.csv' en el directorio data)
+		(no retorna nada pero escribe las variables seleccioandas en el archivo 'data_selected.csv' en el directorio data)
 	"""
 	import random
 	import time
@@ -184,7 +184,7 @@ def select_features_sa(dataFrame, max_vars, original_cols):
 
 		Retorna:
 		NADA
-		(no retorna nada pero escribe las variables seleccioandas en el archivo 'forecast-competition-complete_selected.csv' en el directorio data)
+		(no retorna nada pero escribe las variables seleccioandas en el archivo 'data_selected.csv' en el directorio data)
 
 	"""
 	from simanneal import Annealer
@@ -247,6 +247,6 @@ def select_features_sa(dataFrame, max_vars, original_cols):
 	df.to_csv('data/forecast-competition-complete_selected.csv')
 
 
-if __name__ == '__main__':
-	df = pd.read_csv('series_energ_v2.csv', index_col=0)
-	select_features(df, 30)
+# if __name__ == '__main__':
+# 	df = pd.read_csv('series_energ_v2.csv', index_col=0)
+# 	select_features(df, 30)

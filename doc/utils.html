@@ -18,13 +18,11 @@
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="csv.html">csv</a><br>
-<a href="hyperopt.hp.html">hyperopt.hp</a><br>
-</td><td width="25%" valign=top><a href="modelos.html">modelos</a><br>
-<a href="numpy.html">numpy</a><br>
-</td><td width="25%" valign=top><a href="pandas.html">pandas</a><br>
-<a href="matplotlib.pyplot.html">matplotlib.pyplot</a><br>
-</td><td width="25%" valign=top><a href="hyperopt.tpe.html">hyperopt.tpe</a><br>
-</td></tr></table></td></tr></table><p>
+<a href="modelos.html">modelos</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+<a href="pandas.html">pandas</a><br>
+</td><td width="25%" valign=top><a href="matplotlib.pyplot.html">matplotlib.pyplot</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#eeaa77">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -32,21 +30,18 @@
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><dl><dt><a name="-bayes_optimization"><strong>bayes_optimization</strong></a>(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name)</dt><dd><tt>Función&nbsp;para&nbsp;encontrar&nbsp;los&nbsp;parámetros&nbsp;optimos&nbsp;para&nbsp;un&nbsp;modelo<br>
-&nbsp;<br>
 Parámetros:<br>
 -&nbsp;id_model&nbsp;--&nbsp;Entero,&nbsp;id&nbsp;del&nbsp;modelo&nbsp;que&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar<br>
 -&nbsp;MAX_EVALS&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;máximo&nbsp;&nbsp;de&nbsp;iteraciones&nbsp;de&nbsp;la&nbsp;optimización&nbsp;bayesiana<br>
--&nbsp;values&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;datos&nbsp;con&nbsp;los&nbsp;cauales&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar&nbsp;el&nbsp;modelo,&nbsp;es&nbsp;decir,&nbsp;la&nbsp;serie&nbsp;previamente&nbsp;preprocesada<br>
+-&nbsp;values&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;datos&nbsp;con&nbsp;los&nbsp;cuales&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar&nbsp;el&nbsp;modelo,&nbsp;es&nbsp;decir,&nbsp;la&nbsp;serie&nbsp;previamente&nbsp;preprocesada<br>
 -&nbsp;scaler&nbsp;--&nbsp;Instancia&nbsp;de&nbsp;la&nbsp;clase&nbsp;MinMaxScaler&nbsp;de&nbsp;sklearn,&nbsp;sirve&nbsp;para&nbsp;el&nbsp;escalamiento&nbsp;de&nbsp;los&nbsp;datos&nbsp;y&nbsp;para&nbsp;revertir&nbsp;este&nbsp;escalamiento<br>
 -&nbsp;n_features&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;*features*&nbsp;de&nbsp;la&nbsp;serie<br>
 -&nbsp;n_series&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;*time&nbsp;steps*<br>
--&nbsp;original&nbsp;--&nbsp;Booleano,&nbsp;denota&nbsp;si&nbsp;se&nbsp;van&nbsp;a&nbsp;usar&nbsp;los&nbsp;*features*&nbsp;originales&nbsp;de&nbsp;la&nbsp;serie&nbsp;o&nbsp;los&nbsp;*features*&nbsp;seleccionados,&nbsp;en&nbsp;esta&nbsp;función&nbsp;sirve&nbsp;para&nbsp;identificar&nbsp;el&nbsp;archivo&nbsp;de&nbsp;salida<br>
+-&nbsp;original&nbsp;--&nbsp;Booleano,&nbsp;denota&nbsp;si&nbsp;se&nbsp;van&nbsp;a&nbsp;usar&nbsp;los&nbsp;*features*&nbsp;originales&nbsp;de&nbsp;la&nbsp;serie&nbsp;o&nbsp;los&nbsp;*features*&nbsp;seleccionados,&nbsp;en&nbsp;esta&nbsp;función&nbsp;serviría&nbsp;para&nbsp;identificar&nbsp;el&nbsp;archivo&nbsp;de&nbsp;salida<br>
 -&nbsp;verbosity&nbsp;--&nbsp;Entero,&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;String,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;guardará&nbsp;y/o&nbsp;se&nbsp;cargará&nbsp;el&nbsp;modelo&nbsp;entrenado<br>
-&nbsp;<br>
 Retorna:&nbsp;<br>
--&nbsp;best&nbsp;--&nbsp;Diccionario,&nbsp;diccionario&nbsp;con&nbsp;los&nbsp;mejores&nbsp;parámetros&nbsp;encontrados&nbsp;en&nbsp;la&nbsp;optimización&nbsp;bayesiana<br>
--&nbsp;bayes_trails_results&nbsp;--&nbsp;Lista,&nbsp;Lista&nbsp;con&nbsp;los&nbsp;resultados&nbsp;de&nbsp;todas&nbsp;las&nbsp;iteraciones&nbsp;del&nbsp;proceso&nbsp;ordenadas&nbsp;según&nbsp;el&nbsp;rmse</tt></dd></dl>
+-&nbsp;best&nbsp;--&nbsp;Diccionario,&nbsp;diccionario&nbsp;con&nbsp;los&nbsp;mejores&nbsp;parámetros&nbsp;encontrados&nbsp;en&nbsp;la&nbsp;optimización&nbsp;bayesiana</tt></dd></dl>
  <dl><dt><a name="-calculate_diff_level_for_stationarity"><strong>calculate_diff_level_for_stationarity</strong></a>(values, scaler, maxi)</dt><dd><tt>Función&nbsp;que&nbsp;sirve&nbsp;para&nbsp;calcular&nbsp;el&nbsp;nivel&nbsp;de&nbsp;diferenciación&nbsp;necesario&nbsp;para&nbsp;que&nbsp;una&nbsp;serie&nbsp;sea&nbsp;estacionaria<br>
 &nbsp;<br>
 Parámetros:<br>
@@ -56,6 +51,11 @@ Parámetros:<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;maxi&nbsp;|&nbsp;i&nbsp;--&nbsp;Entero,&nbsp;minimo&nbsp;nivel&nbsp;de&nbsp;diferenciación&nbsp;para&nbsp;que&nbsp;la&nbsp;serie&nbsp;sea&nbsp;estacionaria,&nbsp;o&nbsp;maximo&nbsp;número&nbsp;en&nbsp;el&nbsp;que&nbsp;se&nbsp;diferencio&nbsp;en&nbsp;el&nbsp;caso&nbsp;de&nbsp;que&nbsp;la&nbsp;serie&nbsp;no&nbsp;se&nbsp;logro&nbsp;poner&nbsp;estacionaria</tt></dd></dl>
+ <dl><dt><a name="-calculate_rmse"><strong>calculate_rmse</strong></a>(y, y_hat)</dt><dd><tt>Función&nbsp;que&nbsp;calcula&nbsp;el&nbsp;rmse&nbsp;(raiz&nbsp;del&nbsp;error&nbsp;medio&nbsp;cuadrático)&nbsp;entre&nbsp;dos&nbsp;arreglos&nbsp;de&nbsp;datos<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;y&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy&nbsp;|&nbsp;Lista,&nbsp;serie&nbsp;de&nbsp;observaciones&nbsp;o&nbsp;valores&nbsp;reales<br>
+-&nbsp;y_hat&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy&nbsp;|&nbsp;Lista,&nbsp;serie&nbsp;de&nbsp;predicciones</tt></dd></dl>
  <dl><dt><a name="-diff"><strong>diff</strong></a>(values)</dt><dd><tt>Función&nbsp;que&nbsp;sirve&nbsp;para&nbsp;diferenciar&nbsp;una&nbsp;serie<br>
 &nbsp;<br>
 Parámetros:<br>
@@ -72,8 +72,25 @@ Parámetros:<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;[valor]&nbsp;--&nbsp;%&nbsp;de&nbsp;aciertos&nbsp;en&nbsp;la&nbsp;dirección</tt></dd></dl>
+ <dl><dt><a name="-get_returns_direction_accuracy"><strong>get_returns_direction_accuracy</strong></a>(y, y_hat)</dt><dd><tt>Función&nbsp;para&nbsp;calcular&nbsp;el&nbsp;%&nbsp;de&nbsp;aciertos&nbsp;en&nbsp;la&nbsp;dirección&nbsp;de&nbsp;retornos,&nbsp;teniendo&nbsp;en&nbsp;cuenta&nbsp;las&nbsp;observaciones&nbsp;y&nbsp;las&nbsp;predicciones.<br>
+Por&nbsp;dirección&nbsp;se&nbsp;entiende&nbsp;que&nbsp;si&nbsp;en&nbsp;la&nbsp;observación&nbsp;el&nbsp;valor&nbsp;sube,&nbsp;en&nbsp;la&nbsp;predicción&nbsp;también&nbsp;lo&nbsp;haga.&nbsp;De&nbsp;igual&nbsp;forma&nbsp;en&nbsp;el&nbsp;caso&nbsp;de&nbsp;que&nbsp;baje.<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;y&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;las&nbsp;observaciones<br>
+-&nbsp;y_hat&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;las&nbsp;predicciones<br>
+&nbsp;<br>
+Retorna:<br>
+-&nbsp;[valor]&nbsp;--&nbsp;%&nbsp;de&nbsp;aciertos&nbsp;en&nbsp;la&nbsp;dirección</tt></dd></dl>
+ <dl><dt><a name="-get_returns_values_direction_accuracy"><strong>get_returns_values_direction_accuracy</strong></a>(values, returns)</dt><dd><tt>Función&nbsp;para&nbsp;calcular&nbsp;el&nbsp;%&nbsp;de&nbsp;aciertos&nbsp;en&nbsp;la&nbsp;dirección&nbsp;de&nbsp;retornos&nbsp;teniendo&nbsp;una&nbsp;serie&nbsp;en&nbsp;valores&nbsp;y&nbsp;otra&nbsp;en&nbsp;retornos,&nbsp;teniendo&nbsp;en&nbsp;cuenta&nbsp;las&nbsp;observaciones&nbsp;y&nbsp;las&nbsp;predicciones.<br>
+Por&nbsp;dirección&nbsp;se&nbsp;entiende&nbsp;que&nbsp;si&nbsp;en&nbsp;la&nbsp;observación&nbsp;el&nbsp;valor&nbsp;sube,&nbsp;en&nbsp;la&nbsp;predicción&nbsp;también&nbsp;lo&nbsp;haga.&nbsp;De&nbsp;igual&nbsp;forma&nbsp;en&nbsp;el&nbsp;caso&nbsp;de&nbsp;que&nbsp;baje.<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;values&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;serie&nbsp;de&nbsp;valores<br>
+-&nbsp;returns&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;serie&nbsp;de&nbsp;retornos<br>
+Retorna:<br>
+-&nbsp;[valor]&nbsp;--&nbsp;%&nbsp;de&nbsp;aciertos&nbsp;en&nbsp;la&nbsp;dirección</tt></dd></dl>
  <dl><dt><a name="-inverse_transform"><strong>inverse_transform</strong></a>(data, scaler, n_features)</dt></dl>
- <dl><dt><a name="-normalize_data"><strong>normalize_data</strong></a>(values, scale=(-1, 1))</dt><dd><tt>Función&nbsp;para&nbsp;normalizar&nbsp;los&nbsp;datos,&nbsp;es&nbsp;decir,&nbsp;escalarlos&nbsp;en&nbsp;una&nbsp;escala&nbsp;que&nbsp;por&nbsp;*default*&nbsp;es&nbsp;[-1,&nbsp;1]<br>
+ <dl><dt><a name="-normalize_data"><strong>normalize_data</strong></a>(values, scale=(0, 1))</dt><dd><tt>Función&nbsp;para&nbsp;normalizar&nbsp;los&nbsp;datos,&nbsp;es&nbsp;decir,&nbsp;escalarlos&nbsp;en&nbsp;una&nbsp;escala&nbsp;que&nbsp;por&nbsp;*default*&nbsp;es&nbsp;[-1,&nbsp;1]<br>
 &nbsp;<br>
 Parámetros:<br>
 -&nbsp;values&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;los&nbsp;datos<br>
@@ -82,22 +99,19 @@ Parámetros:<br>
 Retorna:<br>
 -&nbsp;scaled&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;los&nbsp;datos&nbsp;escalados<br>
 -&nbsp;scaler&nbsp;--&nbsp;Instancia&nbsp;de&nbsp;MinMaxScaler,&nbsp;para&nbsp;luego&nbsp;revertir&nbsp;el&nbsp;proceso&nbsp;de&nbsp;escalamiento</tt></dd></dl>
- <dl><dt><a name="-objective"><strong>objective</strong></a>(params, values, scaler, n_series, id_model, n_features, verbosity, model_file_name, MAX_EVALS)</dt><dd><tt>Función&nbsp;objetivo&nbsp;que&nbsp;sirve&nbsp;para&nbsp;la&nbsp;optimización&nbsp;bayesiana,&nbsp;sirve&nbsp;para&nbsp;ejecuar&nbsp;el&nbsp;modelo&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;recibidos,&nbsp;calcular&nbsp;el&nbsp;error&nbsp;de&nbsp;esta&nbsp;ejecución&nbsp;y&nbsp;así&nbsp;decidir<br>
+ <dl><dt><a name="-objective"><strong>objective</strong></a>(params, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)</dt><dd><tt>Función&nbsp;objetivo&nbsp;que&nbsp;sirve&nbsp;para&nbsp;la&nbsp;optimización&nbsp;bayesiana,&nbsp;sirve&nbsp;para&nbsp;ejecuar&nbsp;el&nbsp;modelo&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;recibidos,&nbsp;calcular&nbsp;el&nbsp;error&nbsp;de&nbsp;esta&nbsp;ejecución&nbsp;y&nbsp;así&nbsp;decidir<br>
 cuales&nbsp;parámetros&nbsp;son&nbsp;mejores.<br>
-&nbsp;<br>
 Parámetros:<br>
 -&nbsp;params&nbsp;--&nbsp;Diccionario,&nbsp;contien&nbsp;los&nbsp;parametros&nbsp;para&nbsp;la&nbsp;ejecución,&nbsp;estos&nbsp;parámetros&nbsp;son&nbsp;dados&nbsp;por&nbsp;la&nbsp;libreria&nbsp;de&nbsp;optimización&nbsp;bayesiana&nbsp;(hyperopt)&nbsp;dentro&nbsp;de&nbsp;un&nbsp;espacio&nbsp;previamente&nbsp;definido<br>
+-&nbsp;id_model&nbsp;--&nbsp;Entero,&nbsp;id&nbsp;del&nbsp;modelo&nbsp;que&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar<br>
 -&nbsp;values&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;datos&nbsp;con&nbsp;los&nbsp;cuales&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar&nbsp;el&nbsp;modelo,&nbsp;es&nbsp;decir,&nbsp;la&nbsp;serie&nbsp;previamente&nbsp;preprocesada<br>
 -&nbsp;scaler&nbsp;--&nbsp;Instancia&nbsp;de&nbsp;la&nbsp;clase&nbsp;MinMaxScaler&nbsp;de&nbsp;sklearn,&nbsp;sirve&nbsp;para&nbsp;el&nbsp;escalamiento&nbsp;de&nbsp;los&nbsp;datos&nbsp;y&nbsp;para&nbsp;revertir&nbsp;este&nbsp;escalamiento<br>
--&nbsp;n_series&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;*time&nbsp;steps*<br>
--&nbsp;id_model&nbsp;--&nbsp;Entero,&nbsp;id&nbsp;del&nbsp;modelo&nbsp;que&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar<br>
 -&nbsp;n_features&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;*features*&nbsp;de&nbsp;la&nbsp;serie<br>
+-&nbsp;n_series&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;*time&nbsp;steps*<br>
 -&nbsp;verbosity&nbsp;--&nbsp;Entero,&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;String,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;guardará&nbsp;y/o&nbsp;se&nbsp;cargará&nbsp;el&nbsp;modelo&nbsp;entrenado<br>
--&nbsp;MAX_EVALS&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;máximo&nbsp;&nbsp;de&nbsp;iteraciones&nbsp;de&nbsp;la&nbsp;optimización&nbsp;bayesiana,&nbsp;en&nbsp;esta&nbsp;función&nbsp;sirve&nbsp;para&nbsp;identificar&nbsp;el&nbsp;archivo&nbsp;de&nbsp;salida&nbsp;en&nbsp;el&nbsp;directorio&nbsp;trials<br>
-&nbsp;<br>
 Retorna:<br>
--&nbsp;diccionario&nbsp;--&nbsp;Diccioanrio,&nbsp;diccionario&nbsp;que&nbsp;contiene&nbsp;el&nbsp;rmse,&nbsp;los&nbsp;parámetros,&nbsp;la&nbsp;iteración,&nbsp;el&nbsp;tiempo&nbsp;de&nbsp;ejecución&nbsp;y&nbsp;el&nbsp;esatdo&nbsp;de&nbsp;la&nbsp;ejecución.&nbsp;Todo&nbsp;esto&nbsp;es&nbsp;necesario&nbsp;para&nbsp;la&nbsp;libreria</tt></dd></dl>
+-&nbsp;[valor]&nbsp;--&nbsp;Flotante,&nbsp;dicconario&nbsp;qu&nbsp;retorna&nbsp;la&nbsp;"recompensa"&nbsp;de&nbsp;esta&nbsp;ejecuión,&nbsp;la&nbsp;idea&nbsp;esmaximizarla,&nbsp;por&nbsp;eso&nbsp;el&nbsp;"error"&nbsp;de&nbsp;la&nbsp;ejecución&nbsp;se&nbsp;invierte</tt></dd></dl>
  <dl><dt><a name="-plot_data"><strong>plot_data</strong></a>(data, labels, title)</dt><dd><tt>Función&nbsp;para&nbsp;graficar&nbsp;los&nbsp;datos&nbsp;resultantes,&nbsp;solo&nbsp;sirve&nbsp;para&nbsp;las&nbsp;predicciones&nbsp;a&nbsp;1&nbsp;*time&nbsp;step*<br>
 &nbsp;<br>
 Parámetros:<br>
@@ -129,20 +143,6 @@ Parámetros:<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;agg&nbsp;--&nbsp;*Dataframe*&nbsp;de&nbsp;pandas,&nbsp;*dataframe*&nbsp;con&nbsp;todas&nbsp;las&nbsp;variables&nbsp;en&nbsp;el&nbsp;nuevo&nbsp;formato,&nbsp;sus&nbsp;nombres&nbsp;de&nbsp;columnas&nbsp;son&nbsp;del&nbsp;tipo:&nbsp;"var3(t+2)"</tt></dd></dl>
- <dl><dt><a name="-split_data"><strong>split_data</strong></a>(data)</dt><dd><tt>Función&nbsp;para&nbsp;dividir&nbsp;la&nbsp;serie&nbsp;de&nbsp;datos&nbsp;en&nbsp;entrenamiento,&nbsp;validación&nbsp;y&nbsp;*testing*&nbsp;sin&nbsp;el&nbsp;concepto&nbsp;de&nbsp;*lags*&nbsp;adicionalmente&nbsp;retorna&nbsp;los&nbsp;ultimos&nbsp;valores&nbsp;para&nbsp;la&nbsp;predicción.&nbsp;<br>
-Esta&nbsp;función&nbsp;solo&nbsp;es&nbsp;utilizada&nbsp;por&nbsp;el&nbsp;modelo&nbsp;LSTM&nbsp;sin&nbsp;el&nbsp;concepto&nbsp;de&nbsp;ventana&nbsp;deslizante<br>
-&nbsp;<br>
-Parámetros:<br>
--&nbsp;data&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;los&nbsp;datos<br>
-&nbsp;<br>
-Retorna:<br>
--&nbsp;X_train&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;datos&nbsp;de&nbsp;entrenamiento<br>
--&nbsp;X_val&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;datos&nbsp;de&nbsp;validación<br>
--&nbsp;X_test&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;datos&nbsp;de&nbsp;*testing*<br>
--&nbsp;y_train&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;observaciones&nbsp;de&nbsp;tiempos&nbsp;futuros&nbsp;de&nbsp;entrenamiento<br>
--&nbsp;y_val&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;observaciones&nbsp;de&nbsp;tiempos&nbsp;futuros&nbsp;de&nbsp;validación<br>
--&nbsp;y_test&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;observaciones&nbsp;de&nbsp;tiempos&nbsp;futuros&nbsp;de&nbsp;*testing<br>
--&nbsp;last_values&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;últimos&nbsp;datos&nbsp;apra&nbsp;hacer&nbsp;la&nbsp;predicción&nbsp;*out&nbsp;of&nbsp;sample*</tt></dd></dl>
  <dl><dt><a name="-timer"><strong>timer</strong></a> = perf_counter(...)</dt><dd><tt>perf_counter()&nbsp;-&gt;&nbsp;float<br>
 &nbsp;<br>
 Performance&nbsp;counter&nbsp;for&nbsp;benchmarking.</tt></dd></dl>
@@ -170,6 +170,5 @@ Retorna:<br>
 <font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>ID_TO_MODELNAME</strong> = {0: 'lstm', 1: 'randomForest', 2: 'adaBoost', 3: 'svm', 4: 'arima', 5: 'lstmNoSW'}<br>
-<strong>STATUS_OK</strong> = 'ok'</td></tr></table>
+<td width="100%"><strong>ID_TO_MODELNAME</strong> = {0: 'lstm', 1: 'randomForest', 2: 'adaBoost', 3: 'svm', 4: 'arima', 5: 'lstmNoSW'}</td></tr></table>
 </body></html>

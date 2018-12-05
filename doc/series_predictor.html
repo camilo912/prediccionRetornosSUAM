@@ -47,12 +47,14 @@
 <td colspan=2><tt>Clase&nbsp;para&nbsp;crear&nbsp;los&nbsp;modelos,&nbsp;entrenarlos&nbsp;y&nbsp;predecir&nbsp;con&nbsp;ellos,&nbsp;en&nbsp;general&nbsp;es&nbsp;la&nbsp;clase&nbsp;principal&nbsp;y&nbsp;mediante&nbsp;esta&nbsp;se&nbsp;interactua&nbsp;con&nbsp;los&nbsp;modelos.<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="Predictor-__init__"><strong>__init__</strong></a>(self, id_model, original, time_steps, data, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, only_predict=False, model_file_name=None)</dt><dd><tt>Contructor&nbsp;de&nbsp;la&nbsp;clase,&nbsp;añadir&nbsp;aquí&nbsp;todo&nbsp;-................</tt></dd></dl>
-
-<dl><dt><a name="Predictor-train"><strong>train</strong></a>(self, data, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, model_file_name=None)</dt><dd><tt>Función&nbsp;que&nbsp;recibe&nbsp;como&nbsp;entrada&nbsp;los&nbsp;datos&nbsp;de&nbsp;entrenamiento&nbsp;junto&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;y&nbsp;retorna&nbsp;las&nbsp;predicciones&nbsp;a&nbsp;los&nbsp;*timesteps*&nbsp;especificados.<br>
+<dl><dt><a name="Predictor-__init__"><strong>__init__</strong></a>(self, datos, id_model, original, time_steps, data_train, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None)</dt><dd><tt>Constructor&nbsp;de&nbsp;la&nbsp;clase,&nbsp;se&nbsp;encarga&nbsp;de&nbsp;cargar&nbsp;o&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;según&nbsp;lo&nbsp;especificado&nbsp;en&nbsp;los&nbsp;hyperparámetros.<br>
 &nbsp;<br>
 Parámetros:<br>
--&nbsp;data&nbsp;--&nbsp;arreglo&nbsp;de&nbsp;numpy&nbsp;con&nbsp;los&nbsp;datos&nbsp;de&nbsp;entrenamiento&nbsp;con&nbsp;la&nbsp;serie&nbsp;a&nbsp;predecir&nbsp;en&nbsp;la&nbsp;primera&nbsp;posición<br>
+-&nbsp;datos&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;arreglo&nbsp;con&nbsp;todos&nbsp;los&nbsp;datos&nbsp;incluidos&nbsp;los&nbsp;de&nbsp;test&nbsp;(esto&nbsp;solo&nbsp;es&nbsp;necesario&nbsp;para&nbsp;la&nbsp;selección&nbsp;de&nbsp;variables)<br>
+-&nbsp;id_model&nbsp;--&nbsp;Entero,&nbsp;id&nbsp;del&nbsp;modelo&nbsp;que&nbsp;se&nbsp;va&nbsp;a&nbsp;utilizar<br>
+-&nbsp;original&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;entenar&nbsp;con&nbsp;las&nbsp;varaibles&nbsp;originales&nbsp;o&nbsp;con&nbsp;las&nbsp;eleccionadas.&nbsp;True&nbsp;para&nbsp;entrenar&nbsp;con&nbsp;las&nbsp;originales.<br>
+-&nbsp;time_steps&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;periodos&nbsp;en&nbsp;el&nbsp;futuro&nbsp;a&nbsp;predecir<br>
+-&nbsp;data_train&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;arreglo&nbsp;de&nbsp;numpy&nbsp;con&nbsp;los&nbsp;datos&nbsp;de&nbsp;entrenamiento&nbsp;con&nbsp;la&nbsp;serie&nbsp;a&nbsp;predecir&nbsp;en&nbsp;la&nbsp;primera&nbsp;posición<br>
 -&nbsp;original_cols&nbsp;--&nbsp;lista&nbsp;que&nbsp;contiene&nbsp;los&nbsp;nombres&nbsp;de&nbsp;las&nbsp;variables&nbsp;originales,&nbsp;para&nbsp;mantener&nbsp;los&nbsp;nombres&nbsp;cuando&nbsp;se&nbsp;seleccionan&nbsp;variables<br>
 -&nbsp;tune&nbsp;--&nbsp;*booleano*&nbsp;o&nbsp;entero&nbsp;que&nbsp;define&nbsp;si&nbsp;se&nbsp;hace&nbsp;tuning&nbsp;de&nbsp;parametros<br>
 -&nbsp;select&nbsp;--&nbsp;*booleano*&nbsp;o&nbsp;entero&nbsp;que&nbsp;defien&nbsp;si&nbsp;se&nbsp;hace&nbsp;selección&nbsp;de&nbsp;variables<br>
@@ -60,10 +62,33 @@ Parámetros:<br>
 -&nbsp;verbosity&nbsp;--&nbsp;entero&nbsp;que&nbsp;denota&nbsp;el&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución,&nbsp;entre&nbsp;más&nbsp;alto&nbsp;más&nbsp;graficos&nbsp;o&nbsp;información&nbsp;se&nbsp;mostrará&nbsp;(tiene&nbsp;un&nbsp;límite&nbsp;diferente&nbsp;para&nbsp;cada&nbsp;algoritmo)<br>
 -&nbsp;parameters_file_name&nbsp;--&nbsp;*string*&nbsp;que&nbsp;contien&nbsp;el&nbsp;nomrbe&nbsp;del&nbsp;archivo&nbsp;con&nbsp;los&nbsp;parametros&nbsp;a&nbsp;leer,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;se&nbsp;ejecutara&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;por&nbsp;*default*<br>
 -&nbsp;max_evals&nbsp;--&nbsp;entero&nbsp;con&nbsp;la&nbsp;cantidad&nbsp;de&nbsp;ejecuciones&nbsp;a&nbsp;la&nbsp;hora&nbsp;de&nbsp;hacer&nbsp;tuning&nbsp;de&nbsp;parámetros,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;es&nbsp;100<br>
--&nbsp;model_file_name&nbsp;--&nbsp;*string*&nbsp;con&nbsp;el&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;que&nbsp;contiene&nbsp;el&nbsp;model&nbsp;oque&nbsp;se&nbsp;quiere&nbsp;leer&nbsp;para&nbsp;solamente&nbsp;hacer&nbsp;las&nbsp;predicciones<br>
+-&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
+-&nbsp;model_file_name&nbsp;--&nbsp;*string*,&nbsp;con&nbsp;el&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;que&nbsp;contiene&nbsp;el&nbsp;modelo&nbsp;que&nbsp;se&nbsp;quiere&nbsp;cargar</tt></dd></dl>
+
+<dl><dt><a name="Predictor-predict"><strong>predict</strong></a>(self, new_ob)</dt><dd><tt>Función&nbsp;que&nbsp;predice&nbsp;con&nbsp;el&nbsp;modelo&nbsp;previamente&nbsp;entrenado&nbsp;dado&nbsp;un&nbsp;o&nbsp;unos&nbsp;nuevos&nbsp;valores.&nbsp;Con&nbsp;estos&nbsp;nuevos&nbsp;valores&nbsp;hace&nbsp;una&nbsp;iteración&nbsp;de&nbsp;entrenamiento&nbsp;antes&nbsp;de&nbsp;predecir<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;new_ob&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;arreglo&nbsp;con&nbsp;la&nbsp;o&nbsp;las&nbsp;nuevas&nbsp;observaciones.<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;last&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy&nbsp;|&nbsp;Lista&nbsp;|&nbsp;Entero,&nbsp;predicciones&nbsp;de&nbsp;los&nbsp;últimos&nbsp;valores&nbsp;dados,&nbsp;predicciones&nbsp;*out&nbsp;of&nbsp;sample*</tt></dd></dl>
+
+<dl><dt><a name="Predictor-train"><strong>train</strong></a>(self, datos, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None)</dt><dd><tt>Función&nbsp;que&nbsp;recibe&nbsp;como&nbsp;entrada&nbsp;los&nbsp;datos&nbsp;de&nbsp;entrenamiento&nbsp;junto&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;y&nbsp;retorna&nbsp;el&nbsp;modelo&nbsp;entrenado.<br>
+&nbsp;<br>
+Parámetros:<br>
+-&nbsp;datos&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;arreglo&nbsp;con&nbsp;todos&nbsp;los&nbsp;datos&nbsp;incluidos&nbsp;los&nbsp;de&nbsp;test&nbsp;(esto&nbsp;solo&nbsp;es&nbsp;necesario&nbsp;para&nbsp;la&nbsp;selección&nbsp;de&nbsp;variables)<br>
+-&nbsp;original_cols&nbsp;--&nbsp;lista&nbsp;que&nbsp;contiene&nbsp;los&nbsp;nombres&nbsp;de&nbsp;las&nbsp;variables&nbsp;originales,&nbsp;para&nbsp;mantener&nbsp;los&nbsp;nombres&nbsp;cuando&nbsp;se&nbsp;seleccionan&nbsp;variables<br>
+-&nbsp;tune&nbsp;--&nbsp;*booleano*&nbsp;o&nbsp;entero&nbsp;que&nbsp;define&nbsp;si&nbsp;se&nbsp;hace&nbsp;tuning&nbsp;de&nbsp;parametros<br>
+-&nbsp;select&nbsp;--&nbsp;*booleano*&nbsp;o&nbsp;entero&nbsp;que&nbsp;defien&nbsp;si&nbsp;se&nbsp;hace&nbsp;selección&nbsp;de&nbsp;variables<br>
+-&nbsp;max_vars&nbsp;--&nbsp;entero&nbsp;que&nbsp;denota&nbsp;la&nbsp;cantidad&nbsp;maxima&nbsp;de&nbsp;variables&nbsp;a&nbsp;seleccionar&nbsp;a&nbsp;la&nbsp;hora&nbsp;de&nbsp;hacer&nbsp;selección&nbsp;de&nbsp;variables<br>
+-&nbsp;verbosity&nbsp;--&nbsp;entero&nbsp;que&nbsp;denota&nbsp;el&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución,&nbsp;entre&nbsp;más&nbsp;alto&nbsp;más&nbsp;graficos&nbsp;o&nbsp;información&nbsp;se&nbsp;mostrará&nbsp;(tiene&nbsp;un&nbsp;límite&nbsp;diferente&nbsp;para&nbsp;cada&nbsp;algoritmo)<br>
+-&nbsp;parameters_file_name&nbsp;--&nbsp;*string*&nbsp;que&nbsp;contien&nbsp;el&nbsp;nomrbe&nbsp;del&nbsp;archivo&nbsp;con&nbsp;los&nbsp;parametros&nbsp;a&nbsp;leer,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;se&nbsp;ejecutara&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;por&nbsp;*default*<br>
+-&nbsp;max_evals&nbsp;--&nbsp;entero&nbsp;con&nbsp;la&nbsp;cantidad&nbsp;de&nbsp;ejecuciones&nbsp;a&nbsp;la&nbsp;hora&nbsp;de&nbsp;hacer&nbsp;tuning&nbsp;de&nbsp;parámetros,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;es&nbsp;100<br>
+-&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
+-&nbsp;model_file_name&nbsp;--&nbsp;*string*,&nbsp;con&nbsp;el&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;que&nbsp;contiene&nbsp;el&nbsp;modelo&nbsp;que&nbsp;se&nbsp;quiere&nbsp;cargar<br>
+&nbsp;<br>
+Retorna:<br>
+-&nbsp;model&nbsp;--&nbsp;Modelo(varios&nbsp;tipos),&nbsp;modelo&nbsp;entrenado</tt></dd></dl>
 
 <hr>
 Data descriptors defined here:<br>
