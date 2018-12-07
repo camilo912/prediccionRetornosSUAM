@@ -33,29 +33,7 @@ def calculate_rmse(n_series, n_features, n_lags, X, y, scaler, model):
 
 	"""
 	yhat = model.predict(X)
-	# Xs = np.ones((X.shape[0], n_lags * n_features))
-	# yhat = yhat.reshape(-1, n_series)
-	# inv_yhats = []
-	# for i in range(n_series):
-	# 	inv_yhat = np.concatenate((Xs[:, -(n_features - 1):], yhat[:, i].reshape(-1, 1)), axis=1)
-	# 	inv_yhat = scaler.inverse_transform(inv_yhat)
-
-	# 	inv_yhat = inv_yhat[:, -1]
-	# 	inv_yhats.append(inv_yhat)
-
-	# inv_yhat = np.array(inv_yhats).T
 	inv_yhat = utils.inverse_transform(yhat, scaler, n_features)
-	
-	# invert scaling for actual
-	# y = y.reshape((len(y), n_series))
-	# inv_ys = []
-	# for i in range(n_series):
-	# 	inv_y = np.concatenate((Xs[:, -(n_features - 1):], y[:, i].reshape(-1, 1)), axis=1)
-	# 	inv_y = scaler.inverse_transform(inv_y)
-	# 	inv_y = inv_y[:,-1]
-	# 	inv_ys.append(inv_y)
-
-	# inv_y = np.array(inv_ys).T
 	inv_y = utils.inverse_transform(y, scaler, n_features)
 
 	# calculate RMSE	
@@ -82,7 +60,6 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 	"""
 	if(dim):
 		X = np.expand_dims(X, axis=0)
-		# X = X.reshape(1, n_lags, -1) # only for dim, only for LSTM or RNN
 	yhat = model.predict(X)
 	if(not dim):
 		yhat = yhat.reshape(-1, 1) # only for no dim
@@ -117,7 +94,7 @@ def weighted_mse(yTrue, yPred):
 
 	return K.mean((1/idx)*K.square(yTrue-yPred))
 
-def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, n_rnn, n_dense, activation, drop_p):
+def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, n_rnn, n_dense, activation, drop_p, returns):
 	"""
 		
 		Función para crear, entrenar y calcular el error del modelo LSTM, también sirve para predecir
@@ -147,6 +124,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		- n_dense -- Entero, cantidad de capas densas a usar antes de la capa densa de salida
 		- activation -- Entero, id de la activación que se quiere usar 0 para tanh, 1 para relu, se pueden agregar más
 		- drop_p -- Flotante, porcentaje de las neuronas a volver 0 en la capa de dropout número entre 0 y 1
+		- returns -- Booleano, indica si se está trabajando con retornos o no (serie diferenciada). True es que si se trabaja con retornos.
 
 		Retorna:
 		- rmse -- Flotante, raíz del error medio cuadrático de *testing*; retorna None si calc_test_error es False
@@ -295,10 +273,10 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		tmp[:, 0] = last
 		last = scaler.inverse_transform(tmp)[:, 0]
 
-		# para valores
-		# dir_acc = utils.get_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
-		# para retornos
-		dir_acc = utils.get_returns_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
+		if(returns):
+			dir_acc = utils.get_returns_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
+		else:
+			dir_acc = utils.get_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
 	
 	else:
 		from keras.models import load_model
@@ -324,7 +302,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 
 
 ###################### random forest ##########################
-def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name):
+def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, returns):
 	"""
 		
 		Función para crear, entrenar y calcular el error del modelo *random forest*, también sirve para predecir
@@ -350,6 +328,7 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 		- verbosity -- Entero, nivel de verbosidad de la ejecución del modelo, entre más alto más información se mostrará el límite es 4 y debe ser mayor o igual a 0
 		- saved_model -- Booleano, indica si se desea entrenar el modelo o cargar uno guardado. Si True se carga un modelo guardado, si False se entrena un nuevo modelo.
 		- model_file_name -- *String*, nombre del archivo donde se guardará y/o se cargará el modelo
+		- returns -- Booleano, indica si se está trabajando con retornos o no (serie diferenciada). True es que si se trabaja con retornos.
 
 		Retorna:
 		- rmse -- Flotante, raíz del error medio cuadrático de *testing*; retorna None si calc_test_error es False
@@ -384,7 +363,10 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 
 		last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
-		dir_acc = utils.get_direction_accuracy(y, y_hat)
+		if(returns):
+			dir_acc = utils.get_returns_direction_accuracy(y.ravel(), y_hat.ravel())
+		else:
+			dir_acc = utils.get_direction_accuracy(y.ravel(), y_hat.ravel())
 	
 	else:
 		model = joblib.load(model_file_name)
@@ -400,7 +382,7 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 	return rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last, dir_acc, model
 
 ####################### ada boost ###############################
-def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, lr, max_depth, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name):
+def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, lr, max_depth, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, returns):
 	"""
 		
 		Función para crear, entrenar y calcular el error del modelo *ada boost*, también sirve para predecir
@@ -426,6 +408,7 @@ def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_
 		- verbosity -- Entero, nivel de verbosidad de la ejecución del modelo, entre más alto más información se mostrará el límite es 4 y debe ser mayor o igual a 0
 		- saved_model -- Booleano, indica si se desea entrenar el modelo o cargar uno guardado. Si True se carga un modelo guardado, si False se entrena un nuevo modelo.
 		- model_file_name -- *String*, nombre del archivo donde se guardará y/o se cargará el modelo
+		- returns -- Booleano, indica si se está trabajando con retornos o no (serie diferenciada). True es que si se trabaja con retornos.
 
 		Retorna:
 		- rmse -- Flotante, raíz del error medio cuadrático de *testing*; retorna None si calc_test_error es False
@@ -460,7 +443,10 @@ def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_
 			rmse = None
 		last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
-		dir_acc = utils.get_direction_accuracy(y, y_hat)
+		if(returns):
+			dir_acc = utils.get_returns_direction_accuracy(y.ravel(), y_hat.ravel())
+		else:
+			dir_acc = utils.get_direction_accuracy(y.ravel(), y_hat.ravel())
 
 	else:
 		model = joblib.load(model_file_name)
@@ -476,7 +462,7 @@ def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_
 	return rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last, dir_acc, model
 
 ####################################### SVM ##############################
-def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name):
+def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, returns):
 	"""
 		
 		Función para crear, entrenar y calcular el error del modelo SVM, también sirve para predecir
@@ -500,6 +486,7 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 		- verbosity -- Entero, nivel de verbosidad de la ejecución del modelo, entre más alto más información se mostrará el límite es 4 y debe ser mayor o igual a 0
 		- saved_model -- Booleano, indica si se desea entrenar el modelo o cargar uno guardado. Si True se carga un modelo guardado, si False se entrena un nuevo modelo.
 		- model_file_name -- *String*, nombre del archivo donde se guardará y/o se cargará el modelo
+		- returns -- Booleano, indica si se está trabajando con retornos o no (serie diferenciada). True es que si se trabaja con retornos.
 
 		Retorna:
 		- rmse -- Flotante, raíz del error medio cuadrático de *testing*; retorna None si calc_test_error es False
@@ -536,7 +523,10 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 
 		last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
-		dir_acc = utils.get_direction_accuracy(y, y_hat)
+		if(returns):
+			dir_acc = utils.get_returns_direction_accuracy(y.ravel(), y_hat.ravel())
+		else:
+			dir_acc = utils.get_direction_accuracy(y.ravel(), y_hat.ravel())
 
 	else:
 		model = joblib.load(model_file_name)
@@ -552,7 +542,7 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 	return rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last, dir_acc, model
 
 ###################################### ARIMA #########################################
-def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name):
+def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, returns):
 	"""
 		
 		Función para crear, entrenar y calcular el error del modelo ARIMA, también sirve para predecir
@@ -580,6 +570,7 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 		- verbosity -- Entero, nivel de verbosidad de la ejecución del modelo, entre más alto más información se mostrará el límite es 4 y debe ser mayor o igual a 0
 		- saved_model -- Booleano, indica si se desea entrenar el modelo o cargar uno guardado. Si True se carga un modelo guardado, si False se entrena un nuevo modelo.
 		- model_file_name -- *String*, nombre del archivo donde se guardará y/o se cargará el modelo
+		- returns -- Booleano, indica si se está trabajando con retornos o no (serie diferenciada). True es que si se trabaja con retornos.
 
 		Retorna:
 		- rmse -- Flotante, raíz del error medio cuadrático de *testing*; retorna None si calc_test_error es False
@@ -652,7 +643,10 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 
 			inv_yhat = inv_yhat[:, 0:n_series]
 
-			dir_acc = utils.get_direction_accuracy(test_y, y_hat)
+			if(returns):
+				dir_acc = utils.get_returns_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
+			else:
+				dir_acc = utils.get_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
 
 			# train with whole data
 			whole_X = np.append(np.append(np.append(train_X, val_X, axis=0), test_X, axis=0), last_values, axis=0)

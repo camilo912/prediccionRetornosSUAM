@@ -47,7 +47,7 @@
 <td colspan=2><tt>Clase&nbsp;para&nbsp;crear&nbsp;los&nbsp;modelos,&nbsp;entrenarlos&nbsp;y&nbsp;predecir&nbsp;con&nbsp;ellos,&nbsp;en&nbsp;general&nbsp;es&nbsp;la&nbsp;clase&nbsp;principal&nbsp;y&nbsp;mediante&nbsp;esta&nbsp;se&nbsp;interactua&nbsp;con&nbsp;los&nbsp;modelos.<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="Predictor-__init__"><strong>__init__</strong></a>(self, datos, id_model, original, time_steps, data_train, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None)</dt><dd><tt>Constructor&nbsp;de&nbsp;la&nbsp;clase,&nbsp;se&nbsp;encarga&nbsp;de&nbsp;cargar&nbsp;o&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;según&nbsp;lo&nbsp;especificado&nbsp;en&nbsp;los&nbsp;hyperparámetros.<br>
+<dl><dt><a name="Predictor-__init__"><strong>__init__</strong></a>(self, datos, id_model, original, time_steps, data_train, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None, returns=False)</dt><dd><tt>Constructor&nbsp;de&nbsp;la&nbsp;clase,&nbsp;se&nbsp;encarga&nbsp;de&nbsp;cargar&nbsp;o&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;según&nbsp;lo&nbsp;especificado&nbsp;en&nbsp;los&nbsp;hyperparámetros.<br>
 &nbsp;<br>
 Parámetros:<br>
 -&nbsp;datos&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;arreglo&nbsp;con&nbsp;todos&nbsp;los&nbsp;datos&nbsp;incluidos&nbsp;los&nbsp;de&nbsp;test&nbsp;(esto&nbsp;solo&nbsp;es&nbsp;necesario&nbsp;para&nbsp;la&nbsp;selección&nbsp;de&nbsp;variables)<br>
@@ -63,7 +63,8 @@ Parámetros:<br>
 -&nbsp;parameters_file_name&nbsp;--&nbsp;*string*&nbsp;que&nbsp;contien&nbsp;el&nbsp;nomrbe&nbsp;del&nbsp;archivo&nbsp;con&nbsp;los&nbsp;parametros&nbsp;a&nbsp;leer,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;se&nbsp;ejecutara&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;por&nbsp;*default*<br>
 -&nbsp;max_evals&nbsp;--&nbsp;entero&nbsp;con&nbsp;la&nbsp;cantidad&nbsp;de&nbsp;ejecuciones&nbsp;a&nbsp;la&nbsp;hora&nbsp;de&nbsp;hacer&nbsp;tuning&nbsp;de&nbsp;parámetros,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;es&nbsp;100<br>
 -&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
--&nbsp;model_file_name&nbsp;--&nbsp;*string*,&nbsp;con&nbsp;el&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;que&nbsp;contiene&nbsp;el&nbsp;modelo&nbsp;que&nbsp;se&nbsp;quiere&nbsp;cargar</tt></dd></dl>
+-&nbsp;model_file_name&nbsp;--&nbsp;*string*,&nbsp;con&nbsp;el&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;que&nbsp;contiene&nbsp;el&nbsp;modelo&nbsp;que&nbsp;se&nbsp;quiere&nbsp;cargar<br>
+-&nbsp;returns&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;está&nbsp;trabajando&nbsp;con&nbsp;retornos&nbsp;o&nbsp;no&nbsp;(serie&nbsp;diferenciada).&nbsp;True&nbsp;es&nbsp;que&nbsp;si&nbsp;se&nbsp;trabaja&nbsp;con&nbsp;retornos.</tt></dd></dl>
 
 <dl><dt><a name="Predictor-predict"><strong>predict</strong></a>(self, new_ob)</dt><dd><tt>Función&nbsp;que&nbsp;predice&nbsp;con&nbsp;el&nbsp;modelo&nbsp;previamente&nbsp;entrenado&nbsp;dado&nbsp;un&nbsp;o&nbsp;unos&nbsp;nuevos&nbsp;valores.&nbsp;Con&nbsp;estos&nbsp;nuevos&nbsp;valores&nbsp;hace&nbsp;una&nbsp;iteración&nbsp;de&nbsp;entrenamiento&nbsp;antes&nbsp;de&nbsp;predecir<br>
 &nbsp;<br>
@@ -86,6 +87,7 @@ Parámetros:<br>
 -&nbsp;max_evals&nbsp;--&nbsp;entero&nbsp;con&nbsp;la&nbsp;cantidad&nbsp;de&nbsp;ejecuciones&nbsp;a&nbsp;la&nbsp;hora&nbsp;de&nbsp;hacer&nbsp;tuning&nbsp;de&nbsp;parámetros,&nbsp;si&nbsp;no&nbsp;se&nbsp;especifica&nbsp;es&nbsp;100<br>
 -&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;*string*,&nbsp;con&nbsp;el&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;que&nbsp;contiene&nbsp;el&nbsp;modelo&nbsp;que&nbsp;se&nbsp;quiere&nbsp;cargar<br>
+-&nbsp;returns&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;está&nbsp;trabajando&nbsp;con&nbsp;retornos&nbsp;o&nbsp;no&nbsp;(serie&nbsp;diferenciada).&nbsp;True&nbsp;es&nbsp;que&nbsp;si&nbsp;se&nbsp;trabaja&nbsp;con&nbsp;retornos.<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;model&nbsp;--&nbsp;Modelo(varios&nbsp;tipos),&nbsp;modelo&nbsp;entrenado</tt></dd></dl>

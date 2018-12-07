@@ -43,7 +43,7 @@ se&nbsp;invoca&nbsp;al&nbsp;proyecto&nbsp;para&nbsp;realizar&nbsp;las&nbsp;predi
 #&nbsp;3&nbsp;-&gt;&nbsp;SVM..............................(only&nbsp;available&nbsp;for&nbsp;1&nbsp;time&nbsp;step)<br>
 #&nbsp;4&nbsp;-&gt;&nbsp;Arima...........................(only&nbsp;available&nbsp;for&nbsp;1&nbsp;time&nbsp;step)<br>
 &nbsp;<br>
-Se&nbsp;manjean&nbsp;11&nbsp;hyperparámetros&nbsp;principales<br>
+Se&nbsp;manjean&nbsp;12&nbsp;hyperparámetros&nbsp;principales<br>
 -&nbsp;model&nbsp;--&nbsp;Entero,&nbsp;el&nbsp;id&nbsp;del&nbsp;modelo&nbsp;que&nbsp;se&nbsp;va&nbsp;a&nbsp;utilizar&nbsp;(ver&nbsp;ids&nbsp;arriba)<br>
 -&nbsp;parameters&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;va&nbsp;a&nbsp;hacer&nbsp;optimzación&nbsp;de&nbsp;parámetros<br>
 -&nbsp;select&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;va&nbsp;a&nbsp;hacer&nbsp;selección&nbsp;de&nbsp;variables<br>
@@ -55,6 +55,7 @@ Se&nbsp;manjean&nbsp;11&nbsp;hyperparámetros&nbsp;principales<br>
 -&nbsp;MAX_EVALS&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;iteraciones&nbsp;de&nbsp;la&nbsp;optimización&nbsp;bayesiana,&nbsp;si&nbsp;parameters&nbsp;es&nbsp;False&nbsp;este&nbsp;parámetro&nbsp;no&nbsp;importa<br>
 -&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;String,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;va&nbsp;a&nbsp;guardar&nbsp;y/o&nbsp;cargar&nbsp;el&nbsp;modelo&nbsp;entrenado,&nbsp;si&nbsp;saved_model&nbsp;es&nbsp;False&nbsp;este&nbsp;parametro&nbsp;solo&nbsp;importa&nbsp;para&nbsp;guardar&nbsp;el&nbsp;modelo<br>
+-&nbsp;returns&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;está&nbsp;trabajando&nbsp;con&nbsp;retornos&nbsp;o&nbsp;no&nbsp;(serie&nbsp;diferenciada).&nbsp;True&nbsp;es&nbsp;que&nbsp;si&nbsp;se&nbsp;trabaja&nbsp;con&nbsp;retornos.<br>
 &nbsp;<br>
 Hay&nbsp;1&nbsp;hyperparámetro&nbsp;adicional&nbsp;que&nbsp;es:<br>
 -&nbsp;predicting&nbsp;--&nbsp;Entero,&nbsp;id&nbsp;de&nbsp;la&nbsp;columna&nbsp;dentro&nbsp;del&nbsp;dataframe&nbsp;de&nbsp;la&nbsp;variable&nbsp;objetivo&nbsp;a&nbsp;predecir,&nbsp;para&nbsp;que&nbsp;en&nbsp;el&nbsp;caso&nbsp;que&nbsp;esta&nbsp;no&nbsp;sea&nbsp;la&nbsp;posición&nbsp;0,&nbsp;se&nbsp;intercambie</tt></dd></dl>

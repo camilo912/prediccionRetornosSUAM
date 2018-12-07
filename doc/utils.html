@@ -29,7 +29,7 @@
 <font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-bayes_optimization"><strong>bayes_optimization</strong></a>(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name)</dt><dd><tt>Función&nbsp;para&nbsp;encontrar&nbsp;los&nbsp;parámetros&nbsp;optimos&nbsp;para&nbsp;un&nbsp;modelo<br>
+<td width="100%"><dl><dt><a name="-bayes_optimization"><strong>bayes_optimization</strong></a>(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name, returns)</dt><dd><tt>Función&nbsp;para&nbsp;encontrar&nbsp;los&nbsp;parámetros&nbsp;optimos&nbsp;para&nbsp;un&nbsp;modelo<br>
 Parámetros:<br>
 -&nbsp;id_model&nbsp;--&nbsp;Entero,&nbsp;id&nbsp;del&nbsp;modelo&nbsp;que&nbsp;se&nbsp;va&nbsp;a&nbsp;entrenar<br>
 -&nbsp;MAX_EVALS&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;máximo&nbsp;&nbsp;de&nbsp;iteraciones&nbsp;de&nbsp;la&nbsp;optimización&nbsp;bayesiana<br>
@@ -99,7 +99,7 @@ Parámetros:<br>
 Retorna:<br>
 -&nbsp;scaled&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;los&nbsp;datos&nbsp;escalados<br>
 -&nbsp;scaler&nbsp;--&nbsp;Instancia&nbsp;de&nbsp;MinMaxScaler,&nbsp;para&nbsp;luego&nbsp;revertir&nbsp;el&nbsp;proceso&nbsp;de&nbsp;escalamiento</tt></dd></dl>
- <dl><dt><a name="-objective"><strong>objective</strong></a>(params, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)</dt><dd><tt>Función&nbsp;objetivo&nbsp;que&nbsp;sirve&nbsp;para&nbsp;la&nbsp;optimización&nbsp;bayesiana,&nbsp;sirve&nbsp;para&nbsp;ejecuar&nbsp;el&nbsp;modelo&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;recibidos,&nbsp;calcular&nbsp;el&nbsp;error&nbsp;de&nbsp;esta&nbsp;ejecución&nbsp;y&nbsp;así&nbsp;decidir<br>
+ <dl><dt><a name="-objective"><strong>objective</strong></a>(params, id_model, values, scaler, n_features, n_series, verbosity, model_file_name, MAX_EVALS, returns)</dt><dd><tt>Función&nbsp;objetivo&nbsp;que&nbsp;sirve&nbsp;para&nbsp;la&nbsp;optimización&nbsp;bayesiana,&nbsp;sirve&nbsp;para&nbsp;ejecuar&nbsp;el&nbsp;modelo&nbsp;con&nbsp;los&nbsp;parámetros&nbsp;recibidos,&nbsp;calcular&nbsp;el&nbsp;error&nbsp;de&nbsp;esta&nbsp;ejecución&nbsp;y&nbsp;así&nbsp;decidir<br>
 cuales&nbsp;parámetros&nbsp;son&nbsp;mejores.<br>
 Parámetros:<br>
 -&nbsp;params&nbsp;--&nbsp;Diccionario,&nbsp;contien&nbsp;los&nbsp;parametros&nbsp;para&nbsp;la&nbsp;ejecución,&nbsp;estos&nbsp;parámetros&nbsp;son&nbsp;dados&nbsp;por&nbsp;la&nbsp;libreria&nbsp;de&nbsp;optimización&nbsp;bayesiana&nbsp;(hyperopt)&nbsp;dentro&nbsp;de&nbsp;un&nbsp;espacio&nbsp;previamente&nbsp;definido<br>
@@ -110,6 +110,7 @@ Parámetros:<br>
 -&nbsp;n_series&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;de&nbsp;*time&nbsp;steps*<br>
 -&nbsp;verbosity&nbsp;--&nbsp;Entero,&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;String,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;guardará&nbsp;y/o&nbsp;se&nbsp;cargará&nbsp;el&nbsp;modelo&nbsp;entrenado<br>
+-&nbsp;MAX_EVALS&nbsp;--&nbsp;Entero,&nbsp;número&nbsp;máximo&nbsp;&nbsp;de&nbsp;iteraciones&nbsp;de&nbsp;la&nbsp;optimización&nbsp;bayesiana,&nbsp;en&nbsp;esta&nbsp;función&nbsp;sirve&nbsp;para&nbsp;identificar&nbsp;el&nbsp;archivo&nbsp;de&nbsp;los&nbsp;logs<br>
 Retorna:<br>
 -&nbsp;[valor]&nbsp;--&nbsp;Flotante,&nbsp;dicconario&nbsp;qu&nbsp;retorna&nbsp;la&nbsp;"recompensa"&nbsp;de&nbsp;esta&nbsp;ejecuión,&nbsp;la&nbsp;idea&nbsp;esmaximizarla,&nbsp;por&nbsp;eso&nbsp;el&nbsp;"error"&nbsp;de&nbsp;la&nbsp;ejecución&nbsp;se&nbsp;invierte</tt></dd></dl>
  <dl><dt><a name="-plot_data"><strong>plot_data</strong></a>(data, labels, title)</dt><dd><tt>Función&nbsp;para&nbsp;graficar&nbsp;los&nbsp;datos&nbsp;resultantes,&nbsp;solo&nbsp;sirve&nbsp;para&nbsp;las&nbsp;predicciones&nbsp;a&nbsp;1&nbsp;*time&nbsp;step*<br>

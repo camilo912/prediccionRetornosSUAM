@@ -227,7 +227,7 @@ def calculate_diff_level_for_stationarity(values, scaler, maxi):
 		serie = diff(serie)
 	return maxi
 
-def objective(params, id_model, values, scaler, n_features, n_series, verbosity, model_file_name):
+def objective(params, id_model, values, scaler, n_features, n_series, verbosity, model_file_name, MAX_EVALS, returns):
 	"""
 		Función objetivo que sirve para la optimización bayesiana, sirve para ejecuar el modelo con los parámetros recibidos, calcular el error de esta ejecución y así decidir
 		cuales parámetros son mejores.
@@ -240,9 +240,17 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		- n_series -- Entero, número de *time steps*
 		- verbosity -- Entero, nivel de verbosidad de la ejecución
 		- model_file_name -- String, nombre del archivo donde se guardará y/o se cargará el modelo entrenado
+		- MAX_EVALS -- Entero, número máximo  de iteraciones de la optimización bayesiana, en esta función sirve para identificar el archivo de los logs
 		Retorna:
 		- [valor] -- Flotante, dicconario qu retorna la "recompensa" de esta ejecuión, la idea esmaximizarla, por eso el "error" de la ejecución se invierte
 	"""
+	# Keep track of evals
+	global ITERATION
+
+	ITERATION += 1
+	out_file = 'trials/gbm_trials_' + ID_TO_MODELNAME[id_model] + '_' + str(MAX_EVALS) + '.csv'
+	# print(ITERATION, params)
+
 	calc_val_error = True
 	calc_test_error = True
 	if(id_model == 0):
@@ -254,10 +262,13 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
-		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
-														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name, params['n_rnn'], params['n_dense'], params['activation'], params['drop_p'])
-		mean = np.mean(test_y)
-		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
+		rmse, rmse_val, test_y, _, _, _, _, dir_acc, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
+														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name, params['n_rnn'], params['n_dense'], params['activation'], params['drop_p'], returns)
+		if(returns):
+			rmse = rmse_val
+		else:
+			mean = np.mean(np.abs(test_y))
+			rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
 		# print('no_score: ', rmse)
 		# print('time: ', run_time, end='\n\n')
@@ -271,9 +282,12 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
 		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['max_features'], params['min_samples'], 
-																n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
-		mean = np.mean(test_y)
-		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
+																n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name, returns)
+		if(returns):
+			rmse = rmse_val
+		else:
+			mean = np.mean(np.abs(test_y))
+			rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
 		# print('no_score: ', rmse)
 		# print('time: ', run_time, end='\n\n')
@@ -286,9 +300,13 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
 		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_estimators'], params['lr'], params['max_depth'], n_features, 
-															params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name)
-		mean = np.mean(test_y)
-		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
+															params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name, returns)
+		if(returns):
+			rmse = rmse_val
+		else:
+			mean = np.mean(np.abs(test_y))
+			rmse = rmse_val/mean + (1 - dir_acc)
+		rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
 		# print('no_score: ', rmse)
 		# print('time: ', run_time, end='\n\n')
@@ -301,9 +319,13 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 0)
 		rmse, rmse_val, _, _, _, _, _, dir_acc, _ = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, 
-													verbosity, False, model_file_name)
-		mean = np.mean(test_y)
-		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
+													verbosity, False, model_file_name, returns)
+		if(returns):
+			rmse = rmse_val
+		else:
+			mean = np.mean(np.abs(test_y))
+			rmse = rmse_val/mean + (1 - dir_acc)
+		rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
 		# print('no_score: ', rmse)
 		# print('time: ', run_time, end='\n\n')
@@ -320,16 +342,25 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		train_y, val_y, test_y = values[1:wall+1,0], values[wall+1:wall+wall_val+1,0], values[wall+wall_val+1:,0]
 		start = timer()
 		rmse, rmse_val, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['d'], params['q'], n_features, params['n_lags'], scaler, last_values, calc_val_error, 
-														calc_test_error, verbosity, False, model_file_name)
-		mean = np.mean(test_y)
-		rmse = np.abs((mean - rmse_val)/mean) + (1 - dir_acc)
+														calc_test_error, verbosity, False, model_file_name, returns)
+		if(returns):
+			rmse = rmse_val
+		else:
+			mean = np.mean(np.abs(test_y))
+			rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
 		# print('no_score: ', rmse)
 		# print('time: ', run_time, end='\n\n')
 
+	# Write to the csv file
+	of_connection = open(out_file, 'a')
+	writer = csv.writer(of_connection)
+	writer.writerow([rmse, params, ITERATION, run_time])
+	of_connection.close()
+
 	return -1 * rmse
 
-def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name):
+def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name, returns):
 	"""
 		Función para encontrar los parámetros optimos para un modelo
 		Parámetros:
@@ -346,36 +377,60 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 		- best -- Diccionario, diccionario con los mejores parámetros encontrados en la optimización bayesiana
 	"""
 	from bayes_opt import BayesianOptimization
+
+	global ITERATION
+	ITERATION = 0
+
 	if(id_model == 0):
-		space = {'activation': (0.1, 1.9),
-				'batch_size': (5, 100),
-				'drop_p': (0, 1),
-				'n_dense': (0, 5),
-				'n_epochs': (10, 200),
-				'n_hidden': (5, 300),
-				'n_lags': (1, (min(50, int(len(values)/2)))),
-				'n_rnn': (0, 4)}
-		func = lambda activation, batch_size, drop_p, n_dense, n_epochs, n_hidden, n_lags, n_rnn: objective({'activation':activation , 'batch_size':batch_size, 'drop_p':drop_p, 'n_dense':n_dense, 'n_epochs':n_epochs, 'n_hidden':n_hidden, 'n_lags':n_lags, 'n_rnn':n_rnn}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
+		if(n_series == 1):
+			space = {'activation': (0.1, 1.9),
+					'batch_size': (20, 100),
+					'drop_p': (0, 0.75),
+					'n_dense': (0, 3),
+					'n_epochs': (10, 200),
+					'n_hidden': (5, 300),
+					'n_lags': (1, (min(30, int(len(values)/2)))),
+					'n_rnn': (0, 3)}
+		elif(n_series > 1):
+			space = {'activation': (0.1, 1.9),
+					'batch_size': (20, 100),
+					'drop_p': (0, 0.3),
+					'n_dense': (0, 3),
+					'n_epochs': (250, 500),
+					'n_hidden': (50, 300),
+					'n_lags': (2, (min(30, int(len(values)/2)))),
+					'n_rnn': (1, 3)}
+		func = lambda activation, batch_size, drop_p, n_dense, n_epochs, n_hidden, n_lags, n_rnn: objective({'activation':activation , 'batch_size':batch_size, 'drop_p':drop_p, 'n_dense':n_dense, 'n_epochs':n_epochs, 'n_hidden':n_hidden, 'n_lags':n_lags, 'n_rnn':n_rnn}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name, MAX_EVALS, returns)
 	elif(id_model == 1):
 		space = {'max_features': (1, n_features),
 				'min_samples': (1, 20),
 				'n_estimators': (10, 1000),
 				'n_lags': (1, min(50, int(len(values)/2)))}
-		func = lambda max_features, min_samples, n_estimators, n_lags: objective({'max_features': max_features, 'min_samples': min_samples, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
+		func = lambda max_features, min_samples, n_estimators, n_lags: objective({'max_features': max_features, 'min_samples': min_samples, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name, MAX_EVALS, returns)
 	elif(id_model == 2):
 		space = {'lr': (0.00001, 1.0),
 				'max_depth': (2, 10),
 				'n_estimators': (10, 1000),
 				'n_lags': (1, min(50, int(len(values)/2)))}
-		func = lambda lr, max_depth, n_estimators, n_lags: objective({'lr':lr, 'max_depth': max_depth, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
+		func = lambda lr, max_depth, n_estimators, n_lags: objective({'lr':lr, 'max_depth': max_depth, 'n_estimators': n_estimators, 'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name, MAX_EVALS, returns)
 	elif(id_model == 3):
 		space = {'n_lags': (1, min(50, int(len(values)/2)))}
-		func = lambda  n_lags: objective({'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
+		func = lambda  n_lags: objective({'n_lags': n_lags}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name, MAX_EVALS, returns)
 	elif(id_model == 4):
 		diff_level = calculate_diff_level_for_stationarity(values, scaler, 5)
 		space={'n_lags': (1, 12),
 				'q': (1, 12)}
-		func = lambda  n_lags, q: objective({'d': diff_level, 'n_lags': n_lags, 'q': q}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name)
+		func = lambda  n_lags, q: objective({'d': diff_level, 'n_lags': n_lags, 'q': q}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name, MAX_EVALS, returns)
+
+	# File to save results
+	out_file = 'trials/gbm_trials_' + ID_TO_MODELNAME[id_model] + '_' + str(MAX_EVALS) + '.csv'
+	of_connection = open(out_file, 'w')
+	writer = csv.writer(of_connection)
+
+	# Write the headers to the file
+	writer.writerow(['id_model: ' + str(id_model), 'original: ' + str(original), 'returns: ' + str(returns)])
+	writer.writerow(['rmse', 'params', 'iteration', 'train_time'])
+	of_connection.close()
 
 	optimizer = BayesianOptimization(f=func, pbounds=space, verbose=2, random_state=np.random.randint(np.random.randint(100)))
 	if(id_model == 0):
@@ -383,7 +438,7 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 		optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':250.0, 'n_lags':15.0, 'n_rnn':0.0})
 		optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':9.0, 'n_rnn':0.0})
 		optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':25.0, 'n_rnn':0.0})
-	optimizer.maximize(init_points=2, n_iter=MAX_EVALS)
+	optimizer.maximize(init_points=10, n_iter=MAX_EVALS, acq='ucb', kappa=5, alpha=1e-3)
 
 
 	# store best results
@@ -391,7 +446,7 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	of_connection = open('trials/bests.txt', 'a')
 	writer = csv.writer(of_connection)
 	if(id_model == 0):
-		writer.writerow([optimizer.max['target'], best['activation'], best['batch_size'], best['drop_p'], best['n_dense'], best['n_epochs'], best['n_hidden'], obest['n_lags'], best['n_rnn'], MAX_EVALS])
+		writer.writerow([optimizer.max['target'], best['activation'], best['batch_size'], best['drop_p'], best['n_dense'], best['n_epochs'], best['n_hidden'], best['n_lags'], best['n_rnn'], MAX_EVALS])
 	elif(id_model == 1):
 		writer.writerow([optimizer.max['target'], best['n_lags'], best['n_estimators'], best['max_features'], best['min_samples'], MAX_EVALS])
 	elif(id_model == 2):

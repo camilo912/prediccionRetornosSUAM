@@ -29,7 +29,7 @@
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><dl><dt><a name="-calculate_rmse"><strong>calculate_rmse</strong></a>(n_series, n_features, n_lags, X, y, scaler, model)</dt></dl>
- <dl><dt><a name="-model_ada_boost"><strong>model_ada_boost</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, lr, max_depth, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;*ada&nbsp;boost*,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
+ <dl><dt><a name="-model_ada_boost"><strong>model_ada_boost</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, lr, max_depth, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, returns)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;*ada&nbsp;boost*,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
 Este&nbsp;modelo&nbsp;se&nbsp;construye&nbsp;con&nbsp;la&nbsp;libreria&nbsp;sklearn&nbsp;con&nbsp;el&nbsp;algoritmo&nbsp;AdaBoostRegressor&nbsp;y&nbsp;este&nbsp;ada&nbsp;boost&nbsp;se&nbsp;contruye&nbsp;a&nbsp;partir&nbsp;de&nbsp;árboles&nbsp;de&nbsp;decisión<br>
 &nbsp;<br>
 Parámetros:<br>
@@ -52,6 +52,7 @@ Parámetros:<br>
 -&nbsp;verbosity&nbsp;--&nbsp;Entero,&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución&nbsp;del&nbsp;modelo,&nbsp;entre&nbsp;más&nbsp;alto&nbsp;más&nbsp;información&nbsp;se&nbsp;mostrará&nbsp;el&nbsp;límite&nbsp;es&nbsp;4&nbsp;y&nbsp;debe&nbsp;ser&nbsp;mayor&nbsp;o&nbsp;igual&nbsp;a&nbsp;0<br>
 -&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;*String*,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;guardará&nbsp;y/o&nbsp;se&nbsp;cargará&nbsp;el&nbsp;modelo<br>
+-&nbsp;returns&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;está&nbsp;trabajando&nbsp;con&nbsp;retornos&nbsp;o&nbsp;no&nbsp;(serie&nbsp;diferenciada).&nbsp;True&nbsp;es&nbsp;que&nbsp;si&nbsp;se&nbsp;trabaja&nbsp;con&nbsp;retornos.<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;rmse&nbsp;--&nbsp;Flotante,&nbsp;raíz&nbsp;del&nbsp;error&nbsp;medio&nbsp;cuadrático&nbsp;de&nbsp;*testing*;&nbsp;retorna&nbsp;None&nbsp;si&nbsp;calc_test_error&nbsp;es&nbsp;False<br>
@@ -62,7 +63,7 @@ Retorna:<br>
 -&nbsp;y_hat_val&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;predicciones&nbsp;de&nbsp;la&nbsp;partición&nbsp;de&nbsp;validación&nbsp;en&nbsp;escala&nbsp;real<br>
 -&nbsp;last&nbsp;--&nbsp;arreglo&nbsp;de&nbsp;numpy,&nbsp;predicción&nbsp;de&nbsp;los&nbsp;últimos&nbsp;valores<br>
 -&nbsp;[valor]&nbsp;--&nbsp;Flotante,&nbsp;%&nbsp;de&nbsp;acierto&nbsp;en&nbsp;la&nbsp;dirección</tt></dd></dl>
- <dl><dt><a name="-model_arima"><strong>model_arima</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;ARIMA,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
+ <dl><dt><a name="-model_arima"><strong>model_arima</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, returns)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;ARIMA,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
 Este&nbsp;modelo&nbsp;se&nbsp;contruye&nbsp;con&nbsp;la&nbsp;libreria&nbsp;statsmodels&nbsp;con&nbsp;el&nbsp;algoritmo&nbsp;SARIMAX&nbsp;por&nbsp;que&nbsp;proporciona&nbsp;mayor&nbsp;estabilidad&nbsp;y&nbsp;por&nbsp;que&nbsp;el&nbsp;problema&nbsp;contiene&nbsp;variables&nbsp;exogenas<br>
 la&nbsp;implementación&nbsp;de&nbsp;la&nbsp;libreria&nbsp;es&nbsp;un&nbsp;poco&nbsp;enredada&nbsp;y&nbsp;la&nbsp;documentación&nbsp;no&nbsp;es&nbsp;la&nbsp;mejor,&nbsp;pero&nbsp;en&nbsp;python&nbsp;en&nbsp;cuanto&nbsp;a&nbsp;modelos&nbsp;ARIMA&nbsp;es&nbsp;de&nbsp;lo&nbsp;mejor&nbsp;que&nbsp;hay<br>
 Cuando&nbsp;se&nbsp;introducen&nbsp;parámetros&nbsp;que&nbsp;no&nbsp;se&nbsp;pueden&nbsp;calcular&nbsp;matematicamente&nbsp;por&nbsp;el&nbsp;modelo&nbsp;arima&nbsp;se&nbsp;devuelven&nbsp;errores&nbsp;de&nbsp;90000000000&nbsp;en&nbsp;validación&nbsp;y&nbsp;*testing*&nbsp;y&nbsp;las&nbsp;demás<br>
@@ -87,6 +88,7 @@ Parámetros:<br>
 -&nbsp;verbosity&nbsp;--&nbsp;Entero,&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución&nbsp;del&nbsp;modelo,&nbsp;entre&nbsp;más&nbsp;alto&nbsp;más&nbsp;información&nbsp;se&nbsp;mostrará&nbsp;el&nbsp;límite&nbsp;es&nbsp;4&nbsp;y&nbsp;debe&nbsp;ser&nbsp;mayor&nbsp;o&nbsp;igual&nbsp;a&nbsp;0<br>
 -&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;*String*,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;guardará&nbsp;y/o&nbsp;se&nbsp;cargará&nbsp;el&nbsp;modelo<br>
+-&nbsp;returns&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;está&nbsp;trabajando&nbsp;con&nbsp;retornos&nbsp;o&nbsp;no&nbsp;(serie&nbsp;diferenciada).&nbsp;True&nbsp;es&nbsp;que&nbsp;si&nbsp;se&nbsp;trabaja&nbsp;con&nbsp;retornos.<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;rmse&nbsp;--&nbsp;Flotante,&nbsp;raíz&nbsp;del&nbsp;error&nbsp;medio&nbsp;cuadrático&nbsp;de&nbsp;*testing*;&nbsp;retorna&nbsp;None&nbsp;si&nbsp;calc_test_error&nbsp;es&nbsp;False<br>
@@ -97,7 +99,7 @@ Retorna:<br>
 -&nbsp;y_hat_val&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;predicciones&nbsp;de&nbsp;la&nbsp;partición&nbsp;de&nbsp;validación&nbsp;en&nbsp;escala&nbsp;real<br>
 -&nbsp;inv_yhat[-1]&nbsp;--&nbsp;arreglo&nbsp;de&nbsp;numpy,&nbsp;predicción&nbsp;de&nbsp;los&nbsp;últimos&nbsp;valores<br>
 -&nbsp;[valor]&nbsp;--&nbsp;Flotante,&nbsp;%&nbsp;de&nbsp;acierto&nbsp;en&nbsp;la&nbsp;dirección</tt></dd></dl>
- <dl><dt><a name="-model_lstm"><strong>model_lstm</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, n_rnn, n_dense, activation, drop_p)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;LSTM,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
+ <dl><dt><a name="-model_lstm"><strong>model_lstm</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, n_rnn, n_dense, activation, drop_p, returns)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;LSTM,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
 Este&nbsp;modelo&nbsp;está&nbsp;hecho&nbsp;en&nbsp;Keras&nbsp;solamente&nbsp;tiene&nbsp;dos&nbsp;capas&nbsp;una&nbsp;de&nbsp;LSTM&nbsp;y&nbsp;otra&nbsp;Densa&nbsp;o&nbsp;totalmente&nbsp;conectada,&nbsp;utiliza&nbsp;el&nbsp;optimizador&nbsp;Adam&nbsp;y&nbsp;la&nbsp;función&nbsp;de&nbsp;error&nbsp;es&nbsp;personalizada&nbsp;para&nbsp;darle&nbsp;mayor&nbsp;importancia&nbsp;a&nbsp;los&nbsp;priemros&nbsp;*lags*<br>
 &nbsp;<br>
 Parámetros:<br>
@@ -124,6 +126,7 @@ Parámetros:<br>
 -&nbsp;n_dense&nbsp;--&nbsp;Entero,&nbsp;cantidad&nbsp;de&nbsp;capas&nbsp;densas&nbsp;a&nbsp;usar&nbsp;antes&nbsp;de&nbsp;la&nbsp;capa&nbsp;densa&nbsp;de&nbsp;salida<br>
 -&nbsp;activation&nbsp;--&nbsp;Entero,&nbsp;id&nbsp;de&nbsp;la&nbsp;activación&nbsp;que&nbsp;se&nbsp;quiere&nbsp;usar&nbsp;0&nbsp;para&nbsp;tanh,&nbsp;1&nbsp;para&nbsp;relu,&nbsp;se&nbsp;pueden&nbsp;agregar&nbsp;más<br>
 -&nbsp;drop_p&nbsp;--&nbsp;Flotante,&nbsp;porcentaje&nbsp;de&nbsp;las&nbsp;neuronas&nbsp;a&nbsp;volver&nbsp;0&nbsp;en&nbsp;la&nbsp;capa&nbsp;de&nbsp;dropout&nbsp;número&nbsp;entre&nbsp;0&nbsp;y&nbsp;1<br>
+-&nbsp;returns&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;está&nbsp;trabajando&nbsp;con&nbsp;retornos&nbsp;o&nbsp;no&nbsp;(serie&nbsp;diferenciada).&nbsp;True&nbsp;es&nbsp;que&nbsp;si&nbsp;se&nbsp;trabaja&nbsp;con&nbsp;retornos.<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;rmse&nbsp;--&nbsp;Flotante,&nbsp;raíz&nbsp;del&nbsp;error&nbsp;medio&nbsp;cuadrático&nbsp;de&nbsp;*testing*;&nbsp;retorna&nbsp;None&nbsp;si&nbsp;calc_test_error&nbsp;es&nbsp;False<br>
@@ -135,7 +138,7 @@ Retorna:<br>
 -&nbsp;last&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;predicción&nbsp;de&nbsp;los&nbsp;últimos&nbsp;valores<br>
 -&nbsp;dir_acc--&nbsp;Flotante,&nbsp;%&nbsp;de&nbsp;acierto&nbsp;en&nbsp;la&nbsp;dirección<br>
 -&nbsp;model&nbsp;--&nbsp;Modelo,&nbsp;instancia&nbsp;de&nbsp;modelo&nbsp;de&nbsp;keras,&nbsp;retorna&nbsp;el&nbsp;modeo&nbsp;entrenado</tt></dd></dl>
- <dl><dt><a name="-model_random_forest"><strong>model_random_forest</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;*random&nbsp;forest*,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
+ <dl><dt><a name="-model_random_forest"><strong>model_random_forest</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_estimators, max_features, min_samples, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, returns)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;*random&nbsp;forest*,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
 Este&nbsp;modelo&nbsp;se&nbsp;crea&nbsp;con&nbsp;la&nbsp;libreria&nbsp;sklearn&nbsp;con&nbsp;el&nbsp;algoritmo&nbsp;RandomForestregressor<br>
 &nbsp;<br>
 Parámetros:<br>
@@ -158,6 +161,7 @@ Parámetros:<br>
 -&nbsp;verbosity&nbsp;--&nbsp;Entero,&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución&nbsp;del&nbsp;modelo,&nbsp;entre&nbsp;más&nbsp;alto&nbsp;más&nbsp;información&nbsp;se&nbsp;mostrará&nbsp;el&nbsp;límite&nbsp;es&nbsp;4&nbsp;y&nbsp;debe&nbsp;ser&nbsp;mayor&nbsp;o&nbsp;igual&nbsp;a&nbsp;0<br>
 -&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;*String*,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;guardará&nbsp;y/o&nbsp;se&nbsp;cargará&nbsp;el&nbsp;modelo<br>
+-&nbsp;returns&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;está&nbsp;trabajando&nbsp;con&nbsp;retornos&nbsp;o&nbsp;no&nbsp;(serie&nbsp;diferenciada).&nbsp;True&nbsp;es&nbsp;que&nbsp;si&nbsp;se&nbsp;trabaja&nbsp;con&nbsp;retornos.<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;rmse&nbsp;--&nbsp;Flotante,&nbsp;raíz&nbsp;del&nbsp;error&nbsp;medio&nbsp;cuadrático&nbsp;de&nbsp;*testing*;&nbsp;retorna&nbsp;None&nbsp;si&nbsp;calc_test_error&nbsp;es&nbsp;False<br>
@@ -168,7 +172,7 @@ Retorna:<br>
 -&nbsp;y_hat_val&nbsp;--&nbsp;Arreglo&nbsp;de&nbsp;numpy,&nbsp;predicciones&nbsp;de&nbsp;la&nbsp;partición&nbsp;de&nbsp;validación&nbsp;en&nbsp;escala&nbsp;real<br>
 -&nbsp;last&nbsp;--&nbsp;arreglo&nbsp;de&nbsp;numpy,&nbsp;predicción&nbsp;de&nbsp;los&nbsp;últimos&nbsp;valores<br>
 -&nbsp;[valor]&nbsp;--&nbsp;Flotante,&nbsp;%&nbsp;de&nbsp;acierto&nbsp;en&nbsp;la&nbsp;dirección</tt></dd></dl>
- <dl><dt><a name="-model_svm"><strong>model_svm</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;SVM,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
+ <dl><dt><a name="-model_svm"><strong>model_svm</strong></a>(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, returns)</dt><dd><tt>Función&nbsp;para&nbsp;crear,&nbsp;entrenar&nbsp;y&nbsp;calcular&nbsp;el&nbsp;error&nbsp;del&nbsp;modelo&nbsp;SVM,&nbsp;también&nbsp;sirve&nbsp;para&nbsp;predecir<br>
 Este&nbsp;modelo&nbsp;se&nbsp;construye&nbsp;con&nbsp;la&nbsp;libreria&nbsp;sklearn&nbsp;con&nbsp;el&nbsp;algoritmo&nbsp;SVR&nbsp;(*support&nbsp;vector&nbsp;regressor*)&nbsp;el&nbsp;kernel&nbsp;actual&nbsp;es&nbsp;polinomial&nbsp;de&nbsp;grado&nbsp;1&nbsp;por&nbsp;que&nbsp;dió&nbsp;mejores&nbsp;resultados<br>
 con&nbsp;un&nbsp;dataset&nbsp;con&nbsp;el&nbsp;que&nbsp;probamos&nbsp;pero&nbsp;este&nbsp;se&nbsp;peude&nbsp;cambiar&nbsp;en&nbsp;el&nbsp;futuro<br>
 &nbsp;<br>
@@ -189,6 +193,7 @@ Parámetros:<br>
 -&nbsp;verbosity&nbsp;--&nbsp;Entero,&nbsp;nivel&nbsp;de&nbsp;verbosidad&nbsp;de&nbsp;la&nbsp;ejecución&nbsp;del&nbsp;modelo,&nbsp;entre&nbsp;más&nbsp;alto&nbsp;más&nbsp;información&nbsp;se&nbsp;mostrará&nbsp;el&nbsp;límite&nbsp;es&nbsp;4&nbsp;y&nbsp;debe&nbsp;ser&nbsp;mayor&nbsp;o&nbsp;igual&nbsp;a&nbsp;0<br>
 -&nbsp;saved_model&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;desea&nbsp;entrenar&nbsp;el&nbsp;modelo&nbsp;o&nbsp;cargar&nbsp;uno&nbsp;guardado.&nbsp;Si&nbsp;True&nbsp;se&nbsp;carga&nbsp;un&nbsp;modelo&nbsp;guardado,&nbsp;si&nbsp;False&nbsp;se&nbsp;entrena&nbsp;un&nbsp;nuevo&nbsp;modelo.<br>
 -&nbsp;model_file_name&nbsp;--&nbsp;*String*,&nbsp;nombre&nbsp;del&nbsp;archivo&nbsp;donde&nbsp;se&nbsp;guardará&nbsp;y/o&nbsp;se&nbsp;cargará&nbsp;el&nbsp;modelo<br>
+-&nbsp;returns&nbsp;--&nbsp;Booleano,&nbsp;indica&nbsp;si&nbsp;se&nbsp;está&nbsp;trabajando&nbsp;con&nbsp;retornos&nbsp;o&nbsp;no&nbsp;(serie&nbsp;diferenciada).&nbsp;True&nbsp;es&nbsp;que&nbsp;si&nbsp;se&nbsp;trabaja&nbsp;con&nbsp;retornos.<br>
 &nbsp;<br>
 Retorna:<br>
 -&nbsp;rmse&nbsp;--&nbsp;Flotante,&nbsp;raíz&nbsp;del&nbsp;error&nbsp;medio&nbsp;cuadrático&nbsp;de&nbsp;*testing*;&nbsp;retorna&nbsp;None&nbsp;si&nbsp;calc_test_error&nbsp;es&nbsp;False<br>

@@ -25,7 +25,7 @@ def main():
 		# 3 -> SVM..............................(only available for 1 time step)
 		# 4 -> Arima...........................(only available for 1 time step)
 	
-		Se manjean 11 hyperparámetros principales
+		Se manjean 12 hyperparámetros principales
 		- model -- Entero, el id del modelo que se va a utilizar (ver ids arriba)
 		- parameters -- Booleano, indica si se va a hacer optimzación de parámetros
 		- select -- Booleano, indica si se va a hacer selección de variables
@@ -37,6 +37,7 @@ def main():
 		- MAX_EVALS -- Entero, número de iteraciones de la optimización bayesiana, si parameters es False este parámetro no importa
 		- saved_model -- Booleano, indica si se desea entrenar el modelo o cargar uno guardado. Si True se carga un modelo guardado, si False se entrena un nuevo modelo.
 		- model_file_name -- String, nombre del archivo donde se va a guardar y/o cargar el modelo entrenado, si saved_model es False este parametro solo importa para guardar el modelo
+		- returns -- Booleano, indica si se está trabajando con retornos o no (serie diferenciada). True es que si se trabaja con retornos.
 
 		Hay 1 hyperparámetro adicional que es:
 		- predicting -- Entero, id de la columna dentro del dataframe de la variable objetivo a predecir, para que en el caso que esta no sea la posición 0, se intercambie
@@ -48,15 +49,16 @@ def main():
 	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 0 # set to True for training with original data (not feature selected)
-	time_steps = 1 # number of periods in the future to predict
+	time_steps = 5 # number of periods in the future to predict
 	max_vars = 200 # maximum number of variables for taking in count for variable selection
-	verbosity = 0 # level of logs
+	verbosity = 2 # level of logs
 	parameters_file_name = None # 'parameters/camilo.pars' # 'parameters/default_lstm_%dtimesteps.pars' % time_steps
 	MAX_EVALS = 50
 	saved_model = False
 	model_file_name = None # 'models/lstm-noSW-prueba.h5'
+	returns = True
 
-	#input_file_name = 'data/forecast-competition-complete.csv'
+	# input_file_name = 'data/forecast-competition-complete.csv'
 	input_file_name = 'data/data_16_11_2018_differentiated.csv'
 	# input_file_name = 'data/data_16_11_2018.csv'
 	# input_file_name = 'data/data_returns.csv'
@@ -86,7 +88,7 @@ def main():
 
 	train, _ = split_data(dataframe.values, ini)
 
-	predictor = series_predictor.Predictor(dataframe.values, model, original, time_steps, train, cols, parameters, select, max_vars, verbosity, parameters_file_name, MAX_EVALS, saved_model, model_file_name)
+	predictor = series_predictor.Predictor(dataframe.values, model, original, time_steps, train, cols, parameters, select, max_vars, verbosity, parameters_file_name, MAX_EVALS, saved_model, model_file_name, returns)
 
 	for i in range(ini, fin, step):
 		if(i > ini):
