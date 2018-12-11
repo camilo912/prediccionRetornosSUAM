@@ -12,6 +12,18 @@ from timeit import default_timer as timer
 ID_TO_MODELNAME = {0:'lstm', 1:'randomForest', 2:'adaBoost', 3:'svm', 4:'arima', 5:'lstmNoSW'}
 
 def inverse_transform(data, scaler, n_features):
+	"""
+		Función que invierte el escalamiento de los datos, es decir para de datos escalados a datos originales.
+
+		Parámetros:
+		- data -- Arreglo de numpy, arreglo con los valores escalados
+		- scaler -- instancia de MinMaxScaler, escalador para invertir el escalamiento
+		- n_features -- Entero, número de variables en los datos originales
+
+		Retorna:
+		- data -- Arreglo de numpy, arreglo con los valores en escala original
+		
+	"""
 	data = data.copy()
 	assert type(data) == np.ndarray
 	if(data.ndim == 1): data = data.reshape(-1, 1)
@@ -252,7 +264,7 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 	# print(ITERATION, params)
 
 	calc_val_error = True
-	calc_test_error = True
+	calc_test_error = False
 	if(id_model == 0):
 		if(model_file_name == None): model_file_name = 'models/trials-lstm.h5'
 

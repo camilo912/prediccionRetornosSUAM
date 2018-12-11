@@ -80,7 +80,7 @@ class Predictor():
 					self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28
 				else:
 					self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 1, 0, 0.2303
-					self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 99, 400, 52, 28
+					self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 99, 300, 52, 28
 		
 		elif(self.id_model == 1 and self.time_steps == 1):
 			if(self.original):
@@ -158,6 +158,8 @@ class Predictor():
 
 		calc_val_error = False if verbosity < 2 else True
 		calc_test_error = True
+		# calc_val_error = True
+		# calc_test_error = False
 		if(tune):
 			best = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, self.scaler, n_features, self.time_steps, self.original, verbosity, model_file_name, self.returns)
 
@@ -169,7 +171,8 @@ class Predictor():
 				f = open('parameters/optimized_lstm_%dtimesteps.pars' % self.time_steps, 'w')
 				f.write('%d, %d, %d, %d\n' % (self.n_lags, self.n_epochs, self.batch_size, self.n_hidden))
 				f.close()
-				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
+				# train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
+				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values_without_val(values, self.n_lags, self.time_steps, 1)
 				
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_epochs, self.batch_size, self.n_hidden, n_features, self.n_lags, 
 																self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, self.n_rnn, self.n_dense, self.activation, self.drop_p)

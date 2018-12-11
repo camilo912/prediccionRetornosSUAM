@@ -188,7 +188,19 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			plt.figure()
 			plt.plot(history.history['loss'])
 			plt.suptitle('Training loss')
-			# plt.show()
+
+			# change window position
+			mngr = plt.get_current_fig_manager()
+			import matplotlib
+			backend = matplotlib.get_backend()
+			if backend == 'TkAgg':
+				mngr.window.wm_geometry("+%d+%d" % (25, 55))
+			elif backend == 'WXAgg':
+				mngr.window.SetPosition((25, 55))
+			else:
+				# This works for QT and GTK
+				# You can also use window.setGeometry
+				mngr.window.move(25, 55)
 
 		y_hat_val = model.predict(val_X)
 		y_hat_test = model.predict(test_X)
@@ -258,6 +270,19 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			plt.figure()
 			plt.plot(history.history['loss'])
 			plt.suptitle('Whole data loss')
+			
+			# change window position			
+			mngr = plt.get_current_fig_manager()
+			import matplotlib
+			backend = matplotlib.get_backend()
+			if backend == 'TkAgg':
+				mngr.window.wm_geometry("+%d+%d" % (700, 55))
+			elif backend == 'WXAgg':
+				mngr.window.SetPosition((700, 55))
+			else:
+				# This works for QT and GTK
+				# You can also use window.setGeometry
+				mngr.window.move(700, 55)
 			plt.show()
 
 		model.save(model_file_name)
@@ -274,9 +299,9 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		last = scaler.inverse_transform(tmp)[:, 0]
 
 		if(returns):
-			dir_acc = utils.get_returns_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
+			dir_acc = utils.get_returns_direction_accuracy(val_y.ravel(), y_hat_val.ravel())
 		else:
-			dir_acc = utils.get_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
+			dir_acc = utils.get_direction_accuracy(val_y.ravel(), y_hat_val.ravel())
 	
 	else:
 		from keras.models import load_model

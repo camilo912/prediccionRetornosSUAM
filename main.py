@@ -14,16 +14,16 @@ def main():
 	"""
 		Main del proyecto, este archivo no es necesario, puede ser personalizado o incluso crear uno nuevo, este es simplemente el estilo del creador de este proyecto
 
-		contiene la interacción de un usuario final con el proyecto mediante este archivo se leen los datos de un archivo .csv, se inicializan los hyperparámetros para la ejecución
-		se invoca al proyecto para realizar las predicciones y se grafican los resultados
+		contiene la interacción de un usuario final con el proyecto. Mediante este archivo se leen los datos de un archivo .csv, se inicializan los hyperparámetros para la ejecución
+		se invoca al proyecto para que entrene y realice las predicciones y se grafican los resultados
 
 
 		#### Models ids ####
-		# 0 -> LSTM with sliddding window
+		# 0 -> LSTM
 		# 1 -> Random Forest....................(only available for 1 time step)
 		# 2 -> AdaBoost.........................(only available for 1 time step)
 		# 3 -> SVM..............................(only available for 1 time step)
-		# 4 -> Arima...........................(only available for 1 time step)
+		# 4 -> Arima............................(only available for 1 time step)
 	
 		Se manjean 12 hyperparámetros principales
 		- model -- Entero, el id del modelo que se va a utilizar (ver ids arriba)
@@ -33,10 +33,10 @@ def main():
 		- time_steps -- Entero, número de tiempos en el futuro que se van a predecir
 		- max_vars -- Entero, número máximo de variables a ser seleccionadas por el algoritmo de selección de variables, si select es False, este parámetro no importa
 		- verbosity -- Entero, número que indica el nivel de verbosidad de la ejecución, hasta 2 muestra gráficas, de ahí para arriba muestra *logs* de la ejecución
-		- parameters_file_name -- String, nombre del archivo donde se va a guardar o cargar el modelo entrenado, si este parámetro es None, se utilzian los parámetros por *default*
+		- parameters_file_name -- String, nombre del archivo donde se va a guardar o cargar el modelo entrenado, si este parámetro es None, se utilizan los parámetros por *default*
 		- MAX_EVALS -- Entero, número de iteraciones de la optimización bayesiana, si parameters es False este parámetro no importa
 		- saved_model -- Booleano, indica si se desea entrenar el modelo o cargar uno guardado. Si True se carga un modelo guardado, si False se entrena un nuevo modelo.
-		- model_file_name -- String, nombre del archivo donde se va a guardar y/o cargar el modelo entrenado, si saved_model es False este parametro solo importa para guardar el modelo
+		- model_file_name -- String, nombre del archivo donde se va a guardar y/o cargar el modelo entrenado, si saved_model es False este parámetro solo importa para guardar el modelo
 		- returns -- Booleano, indica si se está trabajando con retornos o no (serie diferenciada). True es que si se trabaja con retornos.
 
 		Hay 1 hyperparámetro adicional que es:
@@ -49,7 +49,7 @@ def main():
 	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 0 # set to True for training with original data (not feature selected)
-	time_steps = 5 # number of periods in the future to predict
+	time_steps = 10 # number of periods in the future to predict
 	max_vars = 200 # maximum number of variables for taking in count for variable selection
 	verbosity = 2 # level of logs
 	parameters_file_name = None # 'parameters/camilo.pars' # 'parameters/default_lstm_%dtimesteps.pars' % time_steps
@@ -91,20 +91,6 @@ def main():
 	predictor = series_predictor.Predictor(dataframe.values, model, original, time_steps, train, cols, parameters, select, max_vars, verbosity, parameters_file_name, MAX_EVALS, saved_model, model_file_name, returns)
 
 	for i in range(ini, fin, step):
-		if(i > ini):
-			# only select variables once 
-			if(select):
-				select = 0
-				original = 0
-		
-			# only optimize parameters once
-			if(parameters):
-				parameters = 0
-
-			# Only train once
-			if(not saved_model):
-				saved_model = True
-		
 		print(i)
 		train, test = split_data(dataframe.values, i)
 
@@ -116,14 +102,17 @@ def main():
 		print('observation:', actual, end='\n\n')
 		df = df.append(pd.Series([pred]), ignore_index=True)
 		p.append(pred)
+	
 	datos = dataframe.values[ini:fin+min(step*2, 20)]
 	preds = np.array(p).ravel()
 	tam = min(len(preds), len(datos))
 	print('real rmse: ', utils.calculate_rmse(datos[:tam, 0], preds[:tam]))
-	# print('real direction accuracy: %f%%' % (utils.get_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
-	print('real direction accuracy: %f%%' % (utils.get_returns_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
+	if(returns):
+		print('real direction accuracy: %f%%' % (utils.get_returns_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
+	else:
+		print('real direction accuracy: %f%%' % (utils.get_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
 	#plt.plot(datos[:, 0], marker='*', linestyle='-.', label='observations', lw=10)
-	plt.plot(datos[:, 0], label='observations', lw=10)
+	plt.plot(datos[:, 0], label='observations', lw=10, color='red')
 	if(time_steps > 1):
 		for i in range(len(p)):
 			pad = [None for j in range(i*step)]

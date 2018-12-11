@@ -22,8 +22,8 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 		*stepwise selection* de varaibles, utiliza las importancias de un modelo de random forest para clasificar las mejores variables
 
 		Parámetros:
-		- dataFrame -- *DataFrame* de pandas, datos de todas las varaibles que van a ser seleccionadas
-		- n_news -- Entero, máximo número de variables que vana a ser seleccioandas
+		- dataFrame -- *DataFrame* de pandas, datos de todas las variables que van a ser seleccionadas
+		- n_news -- Entero, máximo número de variables que van a ser seleccioandas
 
 		Retorna:
 		NADA
@@ -69,7 +69,7 @@ def select_features_ga(dataFrame, max_vars, original_cols):
 		Este algoritmo es una implementación propia 
 
 		Parámetros:
-		- dataFrame -- *DataFrame* de pandas, datos de todas las varaibles que van a ser seleccionadas
+		- dataFrame -- *DataFrame* de pandas, datos de todas las variables que van a ser seleccionadas
 		- max_vars -- Entero, número máximo de variables a ser seleccionadas
 		- original_cols -- Lista, lista con los nombres de las columnas originales del problema para reconocer las variables seleccionadas
 
@@ -245,8 +245,3 @@ def select_features_sa(dataFrame, max_vars, original_cols):
 	df = dataFrame[cols]
 	df.columns = np.array(original_cols)[cols]
 	df.to_csv('data/forecast-competition-complete_selected.csv')
-
-
-# if __name__ == '__main__':
-# 	df = pd.read_csv('series_energ_v2.csv', index_col=0)
-# 	select_features(df, 30)

@@ -11,7 +11,7 @@ def get_consistent_columns(df, target):
 		- target -- String, nombre de la variable objetivo
 
 		Retorna:
-		- df_new -- DataFrame de pandas, dataframe con la varaible objetivo y las variables que sean consitentes con las fehcas de la variable objetivo teniendo en cuetna la periodicidad.
+		- df_new -- DataFrame de pandas, dataframe con la variable objetivo y las variables que sean consistentes con las fechas de la variable objetivo teniendo en cuenta la periodicidad.
 	"""
 	consistent = [target]
 	serie_taget = df[target]
@@ -30,18 +30,14 @@ def get_consistent_columns(df, target):
 			if(not col[serie_taget.index].isnull().values.any()):
 				df_new[c] = col
 
-	#print(df_new.index.values)
-	#print(df_new.isnull().values.any())
-	#print(df_new.shape)
 	return df_new
 
 def main():
 	"""
 		Main del archivo, este archivo se encarga de preprocesar los datos que se bajaron de la base de datos y estandarizarlos a datos consistentes según la variable que se quiera predecir.
-		Se tiene en cuetna la variable que se desea redecir y el periodo que se desea predecir para obtener las variables que son consistentes.
+		Se tiene en cuenta la variable que se desea predecir y el periodo que se desea predecir para obtener las variables que son consistentes.
 	"""
 	df = pd.read_csv('data/variables_16_11_2018.csv', header=0, index_col=0)
-	# df = pd.read_csv('data/returns_complete_americas.csv', header=0, index_col=0)
 	# target = 'IBOXIG_Index#@#PX_LAST' # 1
 	# target='IDCOT3TR_Index#@#PX_LAST' # 2
 	# target = "IBOXHY_Index#@#PX_LAST"
@@ -54,7 +50,6 @@ def main():
 	df = get_consistent_columns(df, target)
 	print(df.shape)
 	df.to_csv('data/data_16_11_2018.csv')
-	# df.to_csv('data/data_returns.csv')
 
 
 if __name__ == '__main__':
