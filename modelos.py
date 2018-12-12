@@ -52,7 +52,7 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 		- X -- Arreglo de numpy, los datos con los que se quier hacer la rpedicción para calcular el error
 		- scaler -- Instancia de la clase MinMaxScaler de la libreria sklearn, sirve para escalar los datos y devolverlos a la escala original posteriormente
 		- model -- Modelo de sklearn, el modelo entrenado con el cual se van a realizar las predicciones
-		- dim -- Booleano, Parámetro para controlar los problemas de formato, si se especifica este parametro en True se agrega una dimensión extra a los datos.
+		- dim -- Booleano, Parámetro para controlar los problemas de formato, si se especifica este parámetro en True se agrega una dimensión extra a los datos.
 
 		Retorna:
 		- inv_yhat -- Arreglo de numpy, predicción de los últimos valores en escala real
@@ -183,10 +183,11 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 
 		opt = Adam(lr=0.001)#, clipvalue=0.005, decay=0.005)
 		model.compile(loss=weighted_mse, optimizer=opt)
-		history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False)
+		history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False, validation_data=(val_X, val_y))
 		if(verbosity > 0):
 			plt.figure()
 			plt.plot(history.history['loss'])
+			plt.plot(history.history['val_loss'])
 			plt.suptitle('Training loss')
 
 			# change window position
@@ -292,7 +293,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		#print('direction accuracy total training: ', utils.get_direction_accuracy(pats, whole_y))
 
 		# predict last
-		last = model.predict(np.expand_dims(last_values, axis=0))
+		last = model.predict(last_values)
 		# transform last values
 		tmp = np.zeros((last.shape[1], n_features))
 		tmp[:, 0] = last
@@ -307,7 +308,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		from keras.models import load_model
 		model = load_model(model_file_name, custom_objects={'weighted_mse': weighted_mse})
 
-		last = model.predict(np.expand_dims(last_values, axis=0))
+		last = model.predict(last_values)
 
 		# transform last values
 		tmp = np.zeros((last.shape[1], n_features))

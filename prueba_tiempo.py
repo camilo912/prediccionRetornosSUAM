@@ -217,7 +217,7 @@ n_features = values.shape[1]
 # parametros iniciales
 id_model = 0
 MAX_EVALS = 50
-time_steps = 10
+time_steps = 5
 original = False
 verbosity = 0
 model_file_name = None
@@ -225,18 +225,22 @@ returns = True
 calc_val_error = True
 
 
-best = bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, time_steps, original, verbosity, model_file_name, returns)
+# best = bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, time_steps, original, verbosity, model_file_name, returns)
 
-if(model_file_name == None): model_file_name = 'models/lstm_%dtimesteps.h5' % (time_steps)
-n_lags, n_epochs, batch_size, n_hidden = int(best['n_lags']), int(best['n_epochs']), int(best['batch_size']), int(best['n_hidden'])
-n_rnn, n_dense, activation, drop_p = int(best['n_rnn']), int(best['n_dense']), int(best['activation']), best['drop_p']
-f = open('parameters/optimized_lstm_%dtimesteps.pars' % time_steps, 'w')
-f.write('%d, %d, %d, %d\n' % (n_lags, n_epochs, batch_size, n_hidden))
-f.close()
+# if(model_file_name == None): model_file_name = 'models/lstm_%dtimesteps.h5' % (time_steps)
+# n_lags, n_epochs, batch_size, n_hidden = int(best['n_lags']), int(best['n_epochs']), int(best['batch_size']), int(best['n_hidden'])
+# n_rnn, n_dense, activation, drop_p = int(best['n_rnn']), int(best['n_dense']), int(best['activation']), best['drop_p']
+# f = open('parameters/optimized_lstm_%dtimesteps.pars' % time_steps, 'w')
+# f.write('%d, %d, %d, %d\n' % (n_lags, n_epochs, batch_size, n_hidden))
+# f.close()
+
+n_rnn, n_dense, activation, drop_p = 2, 1, 0, 0.08953
+batch_size, n_epochs, n_hidden, n_lags = 50, 499, 154, 13
+
 train_X, test_X, train_y, test_y = transform_values(values, n_lags, time_steps, 1)
 
 rmse, y, y_hat, dir_acc, model = train_model(train_X, test_X, train_y, test_y, time_steps, n_epochs, batch_size, n_hidden, n_features, n_lags, 
-												scaler, verbosity, n_rnn, n_dense, activation, drop_p)
+												scaler, verbosity, n_rnn, n_dense, activation, drop_p, returns)
 
 print('rmse: %s ' % rmse)
 

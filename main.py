@@ -49,7 +49,7 @@ def main():
 	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
 	select = 0 # set to True for performing feature selection
 	original = 0 # set to True for training with original data (not feature selected)
-	time_steps = 10 # number of periods in the future to predict
+	time_steps = 1 # number of periods in the future to predict
 	max_vars = 200 # maximum number of variables for taking in count for variable selection
 	verbosity = 2 # level of logs
 	parameters_file_name = None # 'parameters/camilo.pars' # 'parameters/default_lstm_%dtimesteps.pars' % time_steps
@@ -104,6 +104,7 @@ def main():
 		p.append(pred)
 	
 	datos = dataframe.values[ini:fin+min(step*2, 20)]
+	# datos = dataframe.values[ini-time_steps:fin-time_steps]
 	preds = np.array(p).ravel()
 	tam = min(len(preds), len(datos))
 	print('real rmse: ', utils.calculate_rmse(datos[:tam, 0], preds[:tam]))
@@ -111,12 +112,11 @@ def main():
 		print('real direction accuracy: %f%%' % (utils.get_returns_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
 	else:
 		print('real direction accuracy: %f%%' % (utils.get_direction_accuracy(datos[:tam, 0], preds[:tam])*100))
-	#plt.plot(datos[:, 0], marker='*', linestyle='-.', label='observations', lw=10)
 	plt.plot(datos[:, 0], label='observations', lw=10, color='red')
 	if(time_steps > 1):
 		for i in range(len(p)):
 			pad = [None for j in range(i*step)]
-			plt.plot(pad + list(p[i]), color='blue')
+			plt.plot(pad + list(p[i]))#, color='blue')
 	else:
 		plt.plot(p, label='predictions')
 		plt.legend()

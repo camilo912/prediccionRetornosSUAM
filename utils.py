@@ -13,7 +13,7 @@ ID_TO_MODELNAME = {0:'lstm', 1:'randomForest', 2:'adaBoost', 3:'svm', 4:'arima',
 
 def inverse_transform(data, scaler, n_features):
 	"""
-		Función que invierte el escalamiento de los datos, es decir para de datos escalados a datos originales.
+		Función que invierte el escalamiento de los datos, es decir pasa de datos escalados a datos originales.
 
 		Parámetros:
 		- data -- Arreglo de numpy, arreglo con los valores escalados
@@ -22,7 +22,7 @@ def inverse_transform(data, scaler, n_features):
 
 		Retorna:
 		- data -- Arreglo de numpy, arreglo con los valores en escala original
-		
+
 	"""
 	data = data.copy()
 	assert type(data) == np.ndarray
@@ -92,14 +92,14 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 
 def transform_values(data, n_lags, n_series, dim):
 	"""
-		Función para preprocesar la serie de entrada, primero le cambia el formato a (número de ejemplos, número de *lags*, número de *features*), luego divide estos datos en 
-		entrenamiento, validación y *testing* adicionalmente retorna los ultimos valores para la predicción.
+		Función para preprocesar la serie de entrada, primero le cambia el formato a (número de ejemplos, número de *lags* X número de *features*), luego divide estos datos en 
+		entrenamiento, validación y *testing* adicionalmente retorna los últimos valores para la predicción.
 
 		Parámetros:
 		- data -- Arreglo de numpy, serie de observaciones ordenada según orden cronológico
 		- n_lags -- Entero, el número de *lags* que se usaran para entrenar
 		- n_series -- Entero, el número de *time steps* a predecir en el futuro
-		- dim -- Booleano, denota si se reformatea los valores de enrtenamiento resultantes, es decir si se cambia el formato de (número de ejemplos, número de *lags* X número de *features*) a (número de ejemplos, número de *lags*, número de *features*)
+		- dim -- Booleano, denota si se reformatea los valores de entrenamiento resultantes, es decir si se cambia el formato de (número de ejemplos, número de *lags* X número de *features*) a (número de ejemplos, número de *lags*, número de *features*)
 
 		Retorna:
 		- train_X -- Arreglo de numpy, datos de entrenamiento
@@ -116,8 +116,6 @@ def transform_values(data, n_lags, n_series, dim):
 	val_size =0.2
 	test_size = 0.2
 	n_features = data.shape[1]
-	#print(data)
-	#raise Exception('Debug')
 	reframed = series_to_supervised(data, n_lags, n_series)
 
 	values = reframed.values # if n_lags = 1 then shape = (349, 100), if n_lags = 2 then shape = (348, 150)
@@ -147,10 +145,10 @@ def transform_values(data, n_lags, n_series, dim):
 		train_X = train_X.reshape((train_X.shape[0], n_lags, n_features))
 		val_X = val_X.reshape((val_X.shape[0], n_lags, n_features))
 		test_X = test_X.reshape((test_X.shape[0], n_lags, n_features))
-		last_values = np.append(test_X[-1,1:n_lags,:], [test[-1,-n_features:]], axis=0)
+		last_values = reframed.loc[list(reframed.index)[-1], list(reframed.columns)[-n_lags*n_features:]].values.reshape(1, n_lags, n_features)
 	else:
-		last_values = np.append(test_X[-1, n_features:].reshape(1,-1), [test[-1,-n_features:]], axis=1)	
-		# return train_X, test_X, train_y, test_y, last_values
+		last_values = reframed.loc[list(reframed.index)[-1], list(reframed.columns)[-n_lags*n_features:]].values.reshape(1, -1)
+
 	return train_X, val_X, test_X, train_y, val_y, test_y, last_values
 
 
@@ -177,11 +175,11 @@ def plot_data(data, labels, title):
 def plot_data_lagged_blocks(data, labels, title):
 	"""
 		Función para graficar los datos resultantes, sirve más que todo para las predicciones a más de un *time step*. Lo que hace es ponerle un *padding* a las predicciones
-		para que queden en el tiempo que están prediciendo, es decir, si *time steps* es 10, la priemra predicción se hara para el tiempo 0 y tendrá las predicciones hasta el
-		tiempo 9, la segunda apredicción se hará en el tiempo 10 y tendra las predicciones del tiempo 10 al 19, etc.
+		para que queden en el tiempo que están prediciendo, es decir, si *time steps* es 10, la priemra predicción se hará para el tiempo 0 y tendrá las predicciones hasta el
+		tiempo 9, la segunda predicción se hará en el tiempo 10 y tendra las predicciones del tiempo 10 al 19, etc.
 
 		Parámetros:
-		- data -- Lista de dos valores, lista con las predicciones y las observaciones, es necesario que la priemra posición sean las observaciones y la segunda las predicciones
+		- data -- Lista de dos valores, lista con las predicciones y las observaciones, es necesario que la primera posición sean las observaciones y la segunda las predicciones
 		- labels -- Lista de dos valores, lista con las etiquetas de los datos para mostrar en el gráfico
 		- title -- String, título del gráfico
 
@@ -220,12 +218,12 @@ def calculate_diff_level_for_stationarity(values, scaler, maxi):
 		Función que sirve para calcular el nivel de diferenciación necesario para que una serie sea estacionaria
 		
 		Parámetros:
-		- values -- Arreglo de numpy, serie sobre la cual se va a calcular el nivel de diferenciación
+		- values -- Arreglo de numpy, serie sobre la cual se va a calcular el nivel de diferenciación necesario
 		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para revertir el escalamiento de la serie
 		- maxi -- Entero, valor maximo de diferenciación permitido, si se llega a este limite y la serie no es estacionaria se devolverá maxi como el nivel de diferenciación
 
 		Retorna:
-		- maxi | i -- Entero, minimo nivel de diferenciación para que la serie sea estacionaria, o maximo número en el que se diferencio en el caso de que la serie no se logro poner estacionaria
+		- maxi | i -- Entero, mínimo nivel de diferenciación para que la serie sea estacionaria, o máximo número en el que se diferenció en el caso de que la serie no se haya logrado poner estacionaria
 
 	"""
 	from statsmodels.tsa.stattools import adfuller
@@ -241,10 +239,11 @@ def calculate_diff_level_for_stationarity(values, scaler, maxi):
 
 def objective(params, id_model, values, scaler, n_features, n_series, verbosity, model_file_name, MAX_EVALS, returns):
 	"""
-		Función objetivo que sirve para la optimización bayesiana, sirve para ejecuar el modelo con los parámetros recibidos, calcular el error de esta ejecución y así decidir
+		Función objetivo que sirve para la optimización bayesiana, sirve para ejecutar el modelo con los parámetros recibidos, calcular el error de esta ejecución y así decidir
 		cuales parámetros son mejores.
+		
 		Parámetros:
-		- params -- Diccionario, contien los parametros para la ejecución, estos parámetros son dados por la libreria de optimización bayesiana (hyperopt) dentro de un espacio previamente definido
+		- params -- Diccionario, contien los parametros para la ejecución, estos parámetros son dados por la libreria de optimización bayesiana (bayes_opt) dentro de un espacio previamente definido
 		- id_model -- Entero, id del modelo que se va a entrenar
 		- values -- Arreglo de numpy, datos con los cuales se va a entrenar el modelo, es decir, la serie previamente preprocesada
 		- scaler -- Instancia de la clase MinMaxScaler de sklearn, sirve para el escalamiento de los datos y para revertir este escalamiento
@@ -253,8 +252,10 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		- verbosity -- Entero, nivel de verbosidad de la ejecución
 		- model_file_name -- String, nombre del archivo donde se guardará y/o se cargará el modelo entrenado
 		- MAX_EVALS -- Entero, número máximo  de iteraciones de la optimización bayesiana, en esta función sirve para identificar el archivo de los logs
+		
 		Retorna:
-		- [valor] -- Flotante, dicconario qu retorna la "recompensa" de esta ejecuión, la idea esmaximizarla, por eso el "error" de la ejecución se invierte
+		- [valor] -- Flotante, dicconario que retorna la "recompensa" de esta ejecución, la idea es maximizarla, por eso el "error" de la ejecución se invierte
+
 	"""
 	# Keep track of evals
 	global ITERATION
@@ -374,7 +375,8 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 
 def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series, original, verbosity, model_file_name, returns):
 	"""
-		Función para encontrar los parámetros optimos para un modelo
+		Función para encontrar los parámetros óptimos para un modelo
+		
 		Parámetros:
 		- id_model -- Entero, id del modelo que se va a entrenar
 		- MAX_EVALS -- Entero, número máximo  de iteraciones de la optimización bayesiana
@@ -385,6 +387,7 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 		- original -- Booleano, denota si se van a usar los *features* originales de la serie o los *features* seleccionados, en esta función serviría para identificar el archivo de salida
 		- verbosity -- Entero, nivel de verbosidad de la ejecución
 		- model_file_name -- String, nombre del archivo donde se guardará y/o se cargará el modelo entrenado
+		
 		Retorna: 
 		- best -- Diccionario, diccionario con los mejores parámetros encontrados en la optimización bayesiana
 	"""
@@ -485,7 +488,7 @@ def get_direction_accuracy(y, y_hat):
 		- y_hat -- Arreglo de numpy, las predicciones
 
 		Retorna:
-		- [valor] -- % de aciertos en la dirección
+		- [valor] -- % de aciertos en la dirección (valor entre 0 y 1)
 	"""
 	assert len(y) == len(y_hat)
 	y_dirs = [1 if y[i] < y[i+1] else 0 for i in range(len(y) - 1)]
@@ -502,7 +505,7 @@ def get_returns_direction_accuracy(y, y_hat):
 		- y_hat -- Arreglo de numpy, las predicciones
 
 		Retorna:
-		- [valor] -- % de aciertos en la dirección
+		- [valor] -- % de aciertos en la dirección (valor entre 0 y 1)
 	"""
 	assert len(y) == len(y_hat)
 	y_dirs = [1 if y[i]>0 else 0 for i in range(len(y))]
@@ -518,7 +521,7 @@ def get_returns_values_direction_accuracy(values, returns):
 		- values -- Arreglo de numpy, serie de valores
 		- returns -- Arreglo de numpy, serie de retornos
 		Retorna:
-		- [valor] -- % de aciertos en la dirección
+		- [valor] -- % de aciertos en la dirección (valor entre 0 y 1)
 	"""
 	assert len(values) == len(returns) + 1
 	values_dirs = [1 if values[i] < values[i+1] else 0 for i in range(len(values) - 1)]
@@ -527,7 +530,7 @@ def get_returns_values_direction_accuracy(values, returns):
 
 def calculate_rmse(y, y_hat):
 	"""
-		Función que calcula el rmse (raiz del error medio cuadrático) entre dos arreglos de datos
+		Función que calcula el rmse (raíz del error medio cuadrático) entre dos arreglos de datos
 
 		Parámetros:
 		- y -- Arreglo de numpy | Lista, serie de observaciones o valores reales

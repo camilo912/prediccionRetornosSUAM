@@ -26,7 +26,7 @@ class Predictor():
 			- original_cols -- lista que contiene los nombres de las variables originales, para mantener los nombres cuando se seleccionan variables
 			- tune -- *booleano* o entero que define si se hace tuning de parametros
 			- select -- *booleano* o entero que defien si se hace selección de variables
-			- max_vars -- entero que denota la cantidad maxima de variables a seleccionar a la hora de hacer selección de variables
+			- max_vars -- entero que denota la cantidad máxima de variables a seleccionar a la hora de hacer selección de variables
 			- verbosity -- entero que denota el nivel de verbosidad de la ejecución, entre más alto más graficos o información se mostrará (tiene un límite diferente para cada algoritmo)
 			- parameters_file_name -- *string* que contien el nomrbe del archivo con los parametros a leer, si no se especifica se ejecutara con los parámetros por *default*
 			- max_evals -- entero con la cantidad de ejecuciones a la hora de hacer tuning de parámetros, si no se especifica es 100
@@ -79,8 +79,14 @@ class Predictor():
 					self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
 					self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28
 				else:
-					self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 1, 0, 0.2303
-					self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 99, 300, 52, 28
+					# self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 1, 0, 0.2303
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 99, 300, 52, 28
+					# self.n_rnn, self.n_dense, self.activation, self.drop_p = 2, 1, 0, 0.08953
+					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 499, 154, 13
+					#self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 0, 1, 0.0
+					#self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
+					self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 0, 1, 0.0
+					self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
 		
 		elif(self.id_model == 1 and self.time_steps == 1):
 			if(self.original):
@@ -149,19 +155,19 @@ class Predictor():
 			# df = pd.read_csv('data/data_selected_SPTR.csv', header=0, index_col=0)
 			# df = pd.read_csv('data/forecast-competition-complete_selected.csv', index_col=0)
 			# df = pd.read_csv('data/forecast-competition-complete_selected_manually.csv', index_col=0)
-			self.data_train = df.values
+			self.data_train = df.values[:len(self.data_train), :]
 			self.selected_features = list(df.columns)
 
 		self.MAX_EVALS = max_evals
 		values, self.scaler = utils.normalize_data(self.data_train, scale=(-1, 1))
-		n_features = values.shape[1]
+		self.n_features = values.shape[1]
 
 		calc_val_error = False if verbosity < 2 else True
 		calc_test_error = True
 		# calc_val_error = True
 		# calc_test_error = False
 		if(tune):
-			best = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, self.scaler, n_features, self.time_steps, self.original, verbosity, model_file_name, self.returns)
+			best = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, self.scaler, self.n_features, self.time_steps, self.original, verbosity, model_file_name, self.returns)
 
 			if(self.id_model == 0):
 				if(model_file_name == None): model_file_name = 'models/lstm_%dtimesteps.h5' % (self.time_steps)
@@ -171,10 +177,9 @@ class Predictor():
 				f = open('parameters/optimized_lstm_%dtimesteps.pars' % self.time_steps, 'w')
 				f.write('%d, %d, %d, %d\n' % (self.n_lags, self.n_epochs, self.batch_size, self.n_hidden))
 				f.close()
-				# train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
-				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values_without_val(values, self.n_lags, self.time_steps, 1)
+				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
 				
-				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_epochs, self.batch_size, self.n_hidden, n_features, self.n_lags, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_epochs, self.batch_size, self.n_hidden, self.n_features, self.n_lags, 
 																self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, self.n_rnn, self.n_dense, self.activation, self.drop_p)
 				
 				print('rmse: %s ' % rmse)
@@ -204,7 +209,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.max_features, self.min_samples, 
-																		n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
+																		self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
 				
 				print('rmse: %s ' % rmse)
 
@@ -226,7 +231,7 @@ class Predictor():
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
-				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.lr, self.max_depth, n_features, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.lr, self.max_depth, self.n_features, 
 																	self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
 
 				print('rmse: %s ' % rmse)
@@ -249,7 +254,7 @@ class Predictor():
 				f.close()
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
-				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
 															calc_test_error, verbosity, saved_model, model_file_name)
 				
 				print('rmse: %s ' % rmse)
@@ -276,7 +281,7 @@ class Predictor():
 				train_X, val_X, test_X, last_values = values[:wall, :], values[wall:wall+wall_val,:], values[wall+wall_val:-1,:], values[-1,:]
 				train_y, val_y, test_y = values[1:wall+1,0], values[wall+1:wall+wall_val+1,0], values[wall+wall_val+1:,0]
 				start = timer()
-				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.d, self.q, n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.d, self.q, self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
 																calc_test_error, verbosity, saved_model, model_file_name)
 				print('time elapsed: ', timer() - start)
 
@@ -313,7 +318,7 @@ class Predictor():
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_epochs, self.batch_size, 
-																									self.n_hidden, n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, 
+																									self.n_hidden, self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, 
 																									verbosity, saved_model, model_file_name, self.n_rnn, self.n_dense, self.activation, self.drop_p, self.returns)
 				print('time elapsed: ', timer() - start)
 
@@ -353,7 +358,7 @@ class Predictor():
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.max_features, self.min_samples, 
-																		n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
+																		self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
 				print('time elapsed: ', timer() - start)
 
 				if(not saved_model):
@@ -385,7 +390,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				start = timer()
-				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.lr, self.max_depth, n_features, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.lr, self.max_depth, self.n_features, 
 																	self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
 				
 				print('time elapsed: ', timer() - start)
@@ -418,7 +423,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				start = timer()
-				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
 																	calc_test_error, verbosity, saved_model, model_file_name)
 				print('time elapsed: ', timer() - start)
 
@@ -453,7 +458,7 @@ class Predictor():
 				train_X, val_X, test_X, last_values = values[:wall, :], values[wall:wall+wall_val,:], values[wall+wall_val:-1,:], values[-1,:]
 				train_y, val_y, test_y = values[1:wall+1,0], values[wall+1:wall+wall_val+1,0], values[wall+wall_val+1:,0]
 				start = timer()
-				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.d, self.q, n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
+				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.d, self.q, self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
 																calc_test_error, verbosity, saved_model, model_file_name)
 
 				if(model==None):
@@ -495,13 +500,12 @@ class Predictor():
 			new_ob.columns = self.original_cols
 			new_ob = new_ob[self.selected_features].values
 		
-		self.data_train = np.append(self.data_train, new_ob, axis=0)
+		if(self.data_train[-1, 0] != new_ob[-1, 0]): self.data_train = np.append(self.data_train, new_ob, axis=0)
 		values = self.scaler.transform(self.data_train)
 		
 		if(self.id_model==0):
 			train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
 			self.model.fit(test_X[[-n_news]], test_y[[-n_news]], epochs=10, batch_size=1, verbose=0, shuffle=False)
-			last_values = np.expand_dims(last_values, axis=0)
 			pred = self.model.predict(last_values).reshape(n_news, -1)
 
 		elif(self.id_model==1):
