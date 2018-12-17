@@ -77,6 +77,35 @@ def predict_last(n_series, n_features, n_lags, X, scaler, model, dim):
 	return inv_yhat
 
 ############################# LSTM ####################################
+def weighted_mse_returns(yTrue, yPred):
+	"""
+		Función para calcular el error personalizado del modelo LSTM, este error personalizado es la raíz del error cuadrático medio dandole más importancia a los primeros *lags*
+
+		Parámetros:
+		- yTrue -- valores con los cuales e va a comaprar las predicciones
+		- yPred -- predicciones para calcular el error
+
+		Retorna:
+		- [valor] -- error cuadrático medio ponderado
+	"""
+	from keras import backend as K
+	import utils
+
+	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (n_series,)
+	idx = K.cumsum(ones) # similar to a 'range(1,n_series+1)'
+
+	std = K.std(yTrue)
+	mean = K.mean(K.abs(yTrue))
+
+	# weighted rmse
+	l1 = K.abs(K.sqrt(K.mean((1/idx)*K.square(yTrue-yPred)))-mean)/mean
+	# difference of standard deviation, for fluctuation (prevent under fitting)
+	l2 = K.abs(std - K.std(yPred))/std
+	# direction accuracy
+	l3 = K.mean(K.cast(K.not_equal(K.sign(yTrue), K.sign(yPred)), dtype='float32'))
+
+	return l1 + l2
+
 def weighted_mse(yTrue, yPred):
 	"""
 		Función para calcular el error personalizado del modelo LSTM, este error personalizado es la raíz del error cuadrático medio dandole más importancia a los primeros *lags*
@@ -89,10 +118,22 @@ def weighted_mse(yTrue, yPred):
 		- [valor] -- error cuadrático medio ponderado
 	"""
 	from keras import backend as K
+	import utils
+
 	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (n_series,)
 	idx = K.cumsum(ones) # similar to a 'range(1,n_series+1)'
 
-	return K.mean((1/idx)*K.square(yTrue-yPred))
+	std = K.std(yTrue)
+	mean = K.mean(K.abs(yTrue))
+
+	# weighted rmse
+	l1 = K.abs(K.sqrt(K.mean((1/idx)*K.square(yTrue-yPred)))-mean)/mean
+	# difference of standard deviation, for fluctuation (prevent under fitting)
+	l2 = K.abs(std - K.std(yPred))/std
+	# direction accuracy
+	l3 = K.mean(K.cast(K.not_equal(K.sign(yTrue), K.sign(yPred)), dtype='float32'))
+
+	return l1 + l2 +  l3
 
 def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, n_rnn, n_dense, activation, drop_p, returns):
 	"""
@@ -145,7 +186,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 		#print(batch_size, n_epochs, n_hidden, n_lags)
 		# print('training...')
 
-		from keras.layers import Dense, Dropout, LSTM, RepeatVector, Reshape
+		from keras.layers import Dense, Dropout, LSTM, RepeatVector, Reshape, BatchNormalization
 		from keras.models import Sequential
 		from keras.optimizers import Adam
 		from keras import backend as K
@@ -180,7 +221,7 @@ def model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_epoch
 			model.add(Dense(1))
 			model.add(Reshape((n_out,)))
 
-
+		loss_func = weighted_mse if not returns else weighted_mse_returns
 		opt = Adam(lr=0.001)#, clipvalue=0.005, decay=0.005)
 		model.compile(loss=weighted_mse, optimizer=opt)
 		history = model.fit(train_X, train_y, epochs=n_epochs, batch_size=batch_size, verbose=verbose, shuffle=False, validation_data=(val_X, val_y))
@@ -390,9 +431,9 @@ def model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, n_series
 		last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
 		if(returns):
-			dir_acc = utils.get_returns_direction_accuracy(y.ravel(), y_hat.ravel())
+			dir_acc = utils.get_returns_direction_accuracy(y_valset.ravel(), y_hat_val.ravel())
 		else:
-			dir_acc = utils.get_direction_accuracy(y.ravel(), y_hat.ravel())
+			dir_acc = utils.get_direction_accuracy(y_valset.ravel(), y_hat_val.ravel())
 	
 	else:
 		model = joblib.load(model_file_name)
@@ -470,9 +511,9 @@ def model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_
 		last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
 		if(returns):
-			dir_acc = utils.get_returns_direction_accuracy(y.ravel(), y_hat.ravel())
+			dir_acc = utils.get_returns_direction_accuracy(y_valset.ravel(), y_hat_val.ravel())
 		else:
-			dir_acc = utils.get_direction_accuracy(y.ravel(), y_hat.ravel())
+			dir_acc = utils.get_direction_accuracy(y_valset.ravel(), y_hat_val.ravel())
 
 	else:
 		model = joblib.load(model_file_name)
@@ -550,9 +591,9 @@ def model_svm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, n_featur
 		last = predict_last(n_series, n_features, n_lags, last_values, scaler, model, 0)
 
 		if(returns):
-			dir_acc = utils.get_returns_direction_accuracy(y.ravel(), y_hat.ravel())
+			dir_acc = utils.get_returns_direction_accuracy(y_valset.ravel(), y_hat_val.ravel())
 		else:
-			dir_acc = utils.get_direction_accuracy(y.ravel(), y_hat.ravel())
+			dir_acc = utils.get_direction_accuracy(y_valset.ravel(), y_hat_val.ravel())
 
 	else:
 		model = joblib.load(model_file_name)
@@ -670,9 +711,9 @@ def model_arima(train_X, val_X, test_X, train_y, val_y, test_y, n_series, d, q, 
 			inv_yhat = inv_yhat[:, 0:n_series]
 
 			if(returns):
-				dir_acc = utils.get_returns_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
+				dir_acc = utils.get_returns_direction_accuracy(val_y.ravel(), y_hat_val.ravel())
 			else:
-				dir_acc = utils.get_direction_accuracy(test_y.ravel(), y_hat_test.ravel())
+				dir_acc = utils.get_direction_accuracy(val_y.ravel(), y_hat_val.ravel())
 
 			# train with whole data
 			whole_X = np.append(np.append(np.append(train_X, val_X, axis=0), test_X, axis=0), last_values, axis=0)

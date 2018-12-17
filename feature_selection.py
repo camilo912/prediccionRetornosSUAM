@@ -17,13 +17,14 @@ def series_to_supervised(series):
 	y = series[1:, 0]
 	return x, y
 
-def select_features_stepwise_forward(dataFrame, n_news=25):
+def select_features_stepwise_forward(dataFrame, n_news, original_cols):
 	"""
 		*stepwise selection* de varaibles, utiliza las importancias de un modelo de random forest para clasificar las mejores variables
 
 		Parámetros:
 		- dataFrame -- *DataFrame* de pandas, datos de todas las variables que van a ser seleccionadas
-		- n_news -- Entero, máximo número de variables que van a ser seleccioandas
+		- n_news -- Entero, máximo número de variables que van a ser seleccionadas
+		- original_cols -- Lista, lista con los nombres de las columnas originales del problema para reconocer las variables seleccionadas
 
 		Retorna:
 		NADA
@@ -31,6 +32,7 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 
 	"""
 	n_features = dataFrame.shape[1]
+	dataFrame.columns = original_cols
 
 	# params
 	n_news -= 1
@@ -48,7 +50,7 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 			fts = fts + [ft]
 			scaled, scaler = utils.normalize_data(dataFrame[fts].values)
 			x, y = series_to_supervised(scaled)
-			model = RandomForestRegressor()
+			model = RandomForestRegressor(n_estimators=100)
 			model.fit(x, y)
 			importances = model.feature_importances_
 			if(importances[-1] > best_importance):
@@ -61,7 +63,7 @@ def select_features_stepwise_forward(dataFrame, n_news=25):
 		n_news -= 1
 
 	df = dataFrame[inside]
-	df.to_csv('data/forecast-competition-complete_selected.csv')
+	df.to_csv('data/data_selected.csv')
 
 def select_features_ga(dataFrame, max_vars, original_cols):
 	"""
@@ -244,4 +246,4 @@ def select_features_sa(dataFrame, max_vars, original_cols):
 	cols = cols[result]
 	df = dataFrame[cols]
 	df.columns = np.array(original_cols)[cols]
-	df.to_csv('data/forecast-competition-complete_selected.csv')
+	df.to_csv('data/data_selected.csv')

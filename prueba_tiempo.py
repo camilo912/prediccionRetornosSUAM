@@ -13,7 +13,7 @@ def transform_values(data, n_lags, n_series, dim):
 	reframed = utils.series_to_supervised(data, n_lags, n_series)
 
 	# wall = 200 - (n_lags - 1)
-	wall = len(reframed) - 25
+	wall = len(reframed) - 25 + n_series
 
 	values = reframed.values
 	n_features = data.shape[1]
@@ -46,7 +46,7 @@ def weighted_mse(yTrue, yPred):
 	ones = K.ones_like(yTrue[0,:]) # a simple vector with ones shaped as (n_series,)
 	idx = K.cumsum(ones) # similar to a 'range(1,n_series+1)'
 
-	return K.mean((1/idx)*K.square(yTrue-yPred))
+	return K.sqrt(K.mean((1/idx)*K.square(yTrue-yPred)))
 
 def train_model(train_X, test_X, train_y, test_y, n_series, n_epochs, batch_size, n_hidden, n_features, n_lags, scaler, verbosity, n_rnn, n_dense, activation, drop_p, returns):
 	n_out = n_series

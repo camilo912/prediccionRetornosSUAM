@@ -47,20 +47,22 @@ def main():
 	# Parameters
 	model = 0 # id of model to use
 	parameters = 0 # Set to True for performing bayes optimization looking for best parameters
-	select = 0 # set to True for performing feature selection
+	select = 1 # set to True for performing feature selection
 	original = 0 # set to True for training with original data (not feature selected)
-	time_steps = 1 # number of periods in the future to predict
+	time_steps = 5 # number of periods in the future to predict
 	max_vars = 200 # maximum number of variables for taking in count for variable selection
-	verbosity = 2 # level of logs
-	parameters_file_name = None # 'parameters/camilo.pars' # 'parameters/default_lstm_%dtimesteps.pars' % time_steps
+	verbosity = 0 # level of logs
+	parameters_file_name = 'parameters/camilo.pars' # 'parameters/default_lstm_%dtimesteps.pars' % time_steps
 	MAX_EVALS = 50
 	saved_model = False
 	model_file_name = None # 'models/lstm-noSW-prueba.h5'
 	returns = True
+	# 0: algoritmo genetico, 1: simulated annealing, 2: stepwise selection
+	variable_selection_method = 2
 
 	# input_file_name = 'data/forecast-competition-complete.csv'
-	input_file_name = 'data/data_16_11_2018_differentiated.csv'
-	# input_file_name = 'data/data_16_11_2018.csv'
+	# input_file_name = 'data/data_16_11_2018_differentiated.csv'
+	input_file_name = 'data/data_16_11_2018.csv'
 	# input_file_name = 'data/data_returns.csv'
 	dataframe = pd.read_csv(input_file_name, header=0, index_col=0)
 	df = pd.DataFrame()
@@ -88,7 +90,7 @@ def main():
 
 	train, _ = split_data(dataframe.values, ini)
 
-	predictor = series_predictor.Predictor(dataframe.values, model, original, time_steps, train, cols, parameters, select, max_vars, verbosity, parameters_file_name, MAX_EVALS, saved_model, model_file_name, returns)
+	predictor = series_predictor.Predictor(dataframe.values, model, original, time_steps, train, cols, parameters, select, max_vars, verbosity, parameters_file_name, MAX_EVALS, saved_model, model_file_name, returns, variable_selection_method)
 
 	for i in range(ini, fin, step):
 		print(i)
@@ -120,6 +122,7 @@ def main():
 	else:
 		plt.plot(p, label='predictions')
 		plt.legend()
+	if(returns): plt.plot(np.zeros(len(datos)), color='black')
 	plt.suptitle('Predictions vs Observations', fontsize=16)
 	plt.show()
 

@@ -275,12 +275,17 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 
 		start = timer()
 		train_X, val_X, test_X, train_y, val_y, test_y, last_values = transform_values(values, params['n_lags'], n_series, 1)
-		rmse, rmse_val, test_y, _, _, _, _, dir_acc, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
+		rmse, rmse_val, _, _, val_y, y_hat_val, _, dir_acc, _ = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, n_series, params['n_epochs'], params['batch_size'], params['n_hidden'], n_features, 
 														params['n_lags'], scaler, last_values, calc_val_error, calc_test_error, verbosity, False, model_file_name, params['n_rnn'], params['n_dense'], params['activation'], params['drop_p'], returns)
 		if(returns):
-			rmse = rmse_val
+			mean = np.mean(np.abs(val_y))
+			std = np.std(val_y)
+			print('rmse:', rmse_val, 'std: ', np.std(y_hat_val))
+			print('mean: ', mean, 'std_y: ', std)
+			print('inputs -> error: ', np.abs(rmse_val-mean)/mean, 'deviation: ', (np.abs(std-np.std(y_hat_val)))/std)
+			rmse = np.abs(rmse_val-mean)/mean + (np.abs(std-np.std(y_hat_val)))/std
 		else:
-			mean = np.mean(np.abs(test_y))
+			mean = np.mean(np.abs(val_y))
 			rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
 		# print('no_score: ', rmse)
@@ -299,7 +304,7 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		if(returns):
 			rmse = rmse_val
 		else:
-			mean = np.mean(np.abs(test_y))
+			mean = np.mean(np.abs(val_y))
 			rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
 		# print('no_score: ', rmse)
@@ -317,7 +322,7 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		if(returns):
 			rmse = rmse_val
 		else:
-			mean = np.mean(np.abs(test_y))
+			mean = np.mean(np.abs(val_y))
 			rmse = rmse_val/mean + (1 - dir_acc)
 		rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
@@ -336,7 +341,7 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		if(returns):
 			rmse = rmse_val
 		else:
-			mean = np.mean(np.abs(test_y))
+			mean = np.mean(np.abs(val_y))
 			rmse = rmse_val/mean + (1 - dir_acc)
 		rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
@@ -359,7 +364,7 @@ def objective(params, id_model, values, scaler, n_features, n_series, verbosity,
 		if(returns):
 			rmse = rmse_val
 		else:
-			mean = np.mean(np.abs(test_y))
+			mean = np.mean(np.abs(val_y))
 			rmse = rmse_val/mean + (1 - dir_acc)
 		run_time = timer() - start
 		# print('no_score: ', rmse)
@@ -407,14 +412,22 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 					'n_lags': (1, (min(30, int(len(values)/2)))),
 					'n_rnn': (0, 3)}
 		elif(n_series > 1):
+			# space = {'activation': (0.1, 1.9),
+			# 		'batch_size': (20, 100),
+			# 		'drop_p': (0, 0.3),
+			# 		'n_dense': (0, 3),
+			# 		'n_epochs': (250, 500),
+			# 		'n_hidden': (50, 300),
+			# 		'n_lags': (2, (min(30, int(len(values)/2)))),
+			# 		'n_rnn': (1, 3)}
 			space = {'activation': (0.1, 1.9),
 					'batch_size': (20, 100),
-					'drop_p': (0, 0.3),
+					'drop_p': (0, 0.8),
 					'n_dense': (0, 3),
-					'n_epochs': (250, 500),
-					'n_hidden': (50, 300),
+					'n_epochs': (50, 500),
+					'n_hidden': (25, 300),
 					'n_lags': (2, (min(30, int(len(values)/2)))),
-					'n_rnn': (1, 3)}
+					'n_rnn': (0, 3)}
 		func = lambda activation, batch_size, drop_p, n_dense, n_epochs, n_hidden, n_lags, n_rnn: objective({'activation':activation , 'batch_size':batch_size, 'drop_p':drop_p, 'n_dense':n_dense, 'n_epochs':n_epochs, 'n_hidden':n_hidden, 'n_lags':n_lags, 'n_rnn':n_rnn}, id_model, values, scaler, n_features, n_series, verbosity, model_file_name, MAX_EVALS, returns)
 	elif(id_model == 1):
 		space = {'max_features': (1, n_features),
@@ -443,16 +456,19 @@ def bayes_optimization(id_model, MAX_EVALS, values, scaler, n_features, n_series
 	writer = csv.writer(of_connection)
 
 	# Write the headers to the file
-	writer.writerow(['id_model: ' + str(id_model), 'original: ' + str(original), 'returns: ' + str(returns)])
+	writer.writerow(['id_model: ' + str(id_model), 'original: ' + str(original), 'returns: ' + str(returns), 'time_steps: ' + str(n_series)])
 	writer.writerow(['rmse', 'params', 'iteration', 'train_time'])
 	of_connection.close()
 
 	optimizer = BayesianOptimization(f=func, pbounds=space, verbose=2, random_state=np.random.randint(np.random.randint(100)))
 	if(id_model == 0):
-		optimizer.probe(params={'activation':1.0, 'batch_size':10.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':300.0, 'n_hidden':50.0, 'n_lags':10.0, 'n_rnn':0.0})
-		optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':250.0, 'n_lags':15.0, 'n_rnn':0.0})
-		optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':9.0, 'n_rnn':0.0})
-		optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':25.0, 'n_rnn':0.0})
+		#optimizer.probe(params={'activation':1.0, 'batch_size':10.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':300.0, 'n_hidden':50.0, 'n_lags':10.0, 'n_rnn':0.0})
+		#optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':250.0, 'n_lags':15.0, 'n_rnn':0.0})
+		#optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':9.0, 'n_rnn':0.0})
+		#optimizer.probe(params={'activation':1.0, 'batch_size':81.0, 'drop_p':0.0, 'n_dense':0.0, 'n_epochs':200.0, 'n_hidden':269.0, 'n_lags':25.0, 'n_rnn':0.0})
+		optimizer.probe(params={'activation':0.0, 'batch_size':47.0, 'drop_p':0.069, 'n_dense':0.0, 'n_epochs':382.0, 'n_hidden':130.0, 'n_lags':5.0, 'n_rnn':1.0})
+		optimizer.probe(params={'activation':0.0, 'batch_size':47.0, 'drop_p':0.3, 'n_dense':0.0, 'n_epochs':382.0, 'n_hidden':130.0, 'n_lags':5.0, 'n_rnn':1.0})
+		optimizer.probe(params={'activation':0.0, 'batch_size':47.0, 'drop_p':0.5, 'n_dense':0.0, 'n_epochs':382.0, 'n_hidden':130.0, 'n_lags':5.0, 'n_rnn':1.0})
 	optimizer.maximize(init_points=10, n_iter=MAX_EVALS, acq='ucb', kappa=5, alpha=1e-3)
 
 

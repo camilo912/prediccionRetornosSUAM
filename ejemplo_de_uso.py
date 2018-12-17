@@ -17,6 +17,7 @@ MAX_EVALS = 50 # número de evaluciones de la optimización bayesiana para encon
 saved_model = False # controla si se quiere entrenar un modelo o leer uno ya entrenado de la carpeta models, en este caso vamos a entrenar uno desde cero por eso ponemos False
 model_file_name = 'models/ejemplo_de_uso.h5' # nombre del archivo donde se quiere cargar o guardar el modelo que se va a entrenar o a leer. h5 es la extensión que usa keras para guardar modelos.
 returns = False # indica si se está trabajando con retornos, en este caso no
+variable_selection_method = 0 # metodo para la selección de variables, en este caso algoritmo genetico general.
 
 # una vez establecidos los 12 parámetros principalesprocedemos con la ejecución del programa
 
@@ -30,12 +31,12 @@ dataframe.index = np.arange(len(dataframe))
 # calculamos cuantos ejemplos tiene el set de entrenamiento
 wall = int(len(dataframe)*0.8)
 # obtenemos los ejemplos de entrenamiento
-train = dataframe.loc[:wall, :]
+train = dataframe.loc[:wall, :].values
 # obtenemos las columnas originales del dataset
 cols = dataframe.columns
 
 # instanciamos la clase Predictor, la cual se encarga de entrenar y predecir con los modelos.
-predictor = series_predictor.Predictor(dataframe.values, model, original, time_steps, train, cols, parameters, select, max_vars, verbosity, parameters_file_name, MAX_EVALS, saved_model, model_file_name, returns)
+predictor = series_predictor.Predictor(dataframe.values, model, original, time_steps, train, cols, parameters, select, max_vars, verbosity, parameters_file_name, MAX_EVALS, saved_model, model_file_name, returns, variable_selection_method)
 
 # iteramos por todos los ejemplos de prueba excepto el último para poder hacer la prueba
 preds = []

@@ -13,7 +13,7 @@ class Predictor():
 		Clase para crear los modelos, entrenarlos y predecir con ellos, en general es la clase principal y mediante esta se interactua con los modelos.
 
 	"""
-	def __init__(self, datos, id_model, original, time_steps,  data_train, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None, returns=False):
+	def __init__(self, datos, id_model, original, time_steps,  data_train, original_cols, tune, select, max_vars, verbosity, parameters_file_name=None, max_evals=100, saved_model=False, model_file_name=None, returns=False, variable_selection_method=0):
 		"""
 			Constructor de la clase, se encarga de cargar o entrenar el modelo según lo especificado en los hyperparámetros.
 
@@ -43,50 +43,69 @@ class Predictor():
 		self.retrain_cont = 0 # contador de iteraciones para reentrenar
 		self.retrain_rate = 10 # taza de reentreno para modelos que se necesiten reentrenar
 		self.evaluating = False # parámetro para saber si el paso de training se hace al principio o luego cuando se está evaluando
-		self.returns = False
+		self.returns = returns
+		self.variable_selection_method = variable_selection_method
 
 		if(self.id_model == 0 and self.time_steps > 0):
 			if(time_steps == 1):
 				if(self.original):
-					self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
-					self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 26, 181, 39, 3
+					if(self.returns):
+						self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
+						self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28
+					else:
+						self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
+						self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 26, 181, 39, 3
 					
 				else:
-					self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
-					# for IDCOT3TR_Index
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 100, 269, 9
-					# for IBOXIG Index
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
-					# for IBOXHY_Index
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
-					# for GBIEMCOR Index
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 9
-					# for JPEICORE Index
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 250, 15
-					# for SPTR Index
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 100, 102, 5, 50 # bayes optim
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 44, 32, 207, 22 # bayes optim 2
-					# returns
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 79, 90, 44, 28 # bayes optim
-					self.n_rnn, self.n_dense, self.activation, self.drop_p = 2, 1, 1, 0.1529 # bayes optim 2
-					self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 75, 158, 45, 43 # bayes optim 2
+					if(self.returns):
+						# returns
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 79, 90, 44, 28 # bayes optim
+						self.n_rnn, self.n_dense, self.activation, self.drop_p = 2, 1, 1, 0.1529 # bayes optim 2
+						self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 75, 158, 45, 43 # bayes optim 2
+					else:
+						self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
+						# for IDCOT3TR_Index
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 100, 269, 9
+						# for IBOXIG Index
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+						# for IBOXHY_Index
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+						# for GBIEMCOR Index
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 9
+						# for JPEICORE Index
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 250, 15
+						# for SPTR Index
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 81, 200, 269, 25
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 100, 102, 5, 50
+						self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 44, 32, 207, 22
 			else:
 				if(self.original):
-					self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
-					self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28
+					if(self.returns):
+						self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
+						self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28
+					else:
+						self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0 # parámetros de arquitectura de la red
+						self.batch_size, self.lr, self.n_epochs, self.n_hidden, self.n_lags = 52, 0.4799370248396754, 33, 159, 28
 				else:
-					# self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 1, 0, 0.2303
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 99, 300, 52, 28
-					# self.n_rnn, self.n_dense, self.activation, self.drop_p = 2, 1, 0, 0.08953
-					# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 499, 154, 13
-					#self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 0, 1, 0.0
-					#self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
-					self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 0, 1, 0.0
-					self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
+					if(self.returns):
+						# self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 0, 1, 0.0
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 300, 50, 10
+						#self.n_rnn, self.n_dense, self.activation, self.drop_p = 3, 3, 0, 0.3
+						#self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 20, 384, 128, 30
+						# self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 1, 0, 0.2303
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 99, 300, 52, 28
+						# self.n_rnn, self.n_dense, self.activation, self.drop_p = 2, 1, 0, 0.08953
+						# self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 10, 499, 154, 13
+						#self.n_rnn, self.n_dense, self.activation, self.drop_p = 3, 3, 0, 0.5
+						#self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 20, 384, 128, 10
+						self.n_rnn, self.n_dense, self.activation, self.drop_p = 1, 0, 0, 0.069
+						self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 47, 382, 130, 5
+					else:
+						self.n_rnn, self.n_dense, self.activation, self.drop_p = 0, 0, 1, 0.0
+						self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = 44, 32, 207, 22
 		
 		elif(self.id_model == 1 and self.time_steps == 1):
 			if(self.original):
@@ -147,8 +166,12 @@ class Predictor():
 			self.original = 0
 			# feature selection
 			import feature_selection
-			# feature_selection.select_features_sa(pd.DataFrame(datos), max_vars)
-			feature_selection.select_features_ga(pd.DataFrame(datos), max_vars, original_cols)
+			if(self.variable_selection_method == 0):
+				feature_selection.select_features_ga(pd.DataFrame(datos), max_vars, original_cols)
+			elif(self.variable_selection_method == 1):
+				feature_selection.select_features_sa(pd.DataFrame(datos), max_vars, original_cols)
+			elif(self.variable_selection_method == 2):
+				feature_selection.select_features_stepwise_forward(pd.DataFrame(datos), int(len(original_cols)**(1/2)), original_cols)
 		
 		if(not self.original and not self.evaluating):
 			df = pd.read_csv('data/data_selected.csv', header=0, index_col=0)
@@ -167,7 +190,7 @@ class Predictor():
 		# calc_val_error = True
 		# calc_test_error = False
 		if(tune):
-			best = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, self.scaler, self.n_features, self.time_steps, self.original, verbosity, model_file_name, self.returns)
+			best = utils.bayes_optimization(self.id_model, self.MAX_EVALS, values, self.scaler, self.n_features, self.time_steps, self.original, 0, model_file_name, self.returns)
 
 			if(self.id_model == 0):
 				if(model_file_name == None): model_file_name = 'models/lstm_%dtimesteps.h5' % (self.time_steps)
@@ -180,7 +203,7 @@ class Predictor():
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
 				
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_lstm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_epochs, self.batch_size, self.n_hidden, self.n_features, self.n_lags, 
-																self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, self.n_rnn, self.n_dense, self.activation, self.drop_p)
+																self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, self.n_rnn, self.n_dense, self.activation, self.drop_p, self.returns)
 				
 				print('rmse: %s ' % rmse)
 
@@ -209,7 +232,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.max_features, self.min_samples, 
-																		self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
+																		self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, self.returns)
 				
 				print('rmse: %s ' % rmse)
 
@@ -232,7 +255,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.lr, self.max_depth, self.n_features, 
-																	self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
+																	self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, self.returns)
 
 				print('rmse: %s ' % rmse)
 
@@ -255,7 +278,7 @@ class Predictor():
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
-															calc_test_error, verbosity, saved_model, model_file_name)
+															calc_test_error, verbosity, saved_model, model_file_name, self.returns)
 				
 				print('rmse: %s ' % rmse)
 
@@ -282,7 +305,7 @@ class Predictor():
 				train_y, val_y, test_y = values[1:wall+1,0], values[wall+1:wall+wall_val+1,0], values[wall+wall_val+1:,0]
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.d, self.q, self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
-																calc_test_error, verbosity, saved_model, model_file_name)
+																calc_test_error, verbosity, saved_model, model_file_name, self.returns)
 				print('time elapsed: ', timer() - start)
 
 				print('rmse: %s ' % rmse)
@@ -313,7 +336,7 @@ class Predictor():
 					if(len(lines) > 1):
 						raise Exception('File with parameters can\'t have more than 1 line ')
 					readed_parameters = lines[0].strip().split(', ')
-					self.batch_size, self.n_epochs, self.n_hidden, self.n_lags = int(readed_parameters[0]), int(readed_parameters[1]), int(readed_parameters[2]), int(readed_parameters[3])
+					self.activation, self.batch_size, self.drop_p, self.n_dense, self.n_epochs, self.n_hidden, self.n_lags, self.n_rnn = int(readed_parameters[0]), int(readed_parameters[1]), float(readed_parameters[2]), int(readed_parameters[3]), int(readed_parameters[4]), int(readed_parameters[5]), int(readed_parameters[6]), int(readed_parameters[7])
 
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 1)
 				start = timer()
@@ -358,7 +381,7 @@ class Predictor():
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_random_forest(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.max_features, self.min_samples, 
-																		self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
+																		self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, self.returns)
 				print('time elapsed: ', timer() - start)
 
 				if(not saved_model):
@@ -391,7 +414,7 @@ class Predictor():
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_ada_boost(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_estimators, self.lr, self.max_depth, self.n_features, 
-																	self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name)
+																	self.n_lags, self.scaler, last_values, calc_val_error, calc_test_error, verbosity, saved_model, model_file_name, self.returns)
 				
 				print('time elapsed: ', timer() - start)
 
@@ -424,7 +447,7 @@ class Predictor():
 				train_X, val_X, test_X, train_y, val_y, test_y, last_values = utils.transform_values(values, self.n_lags, self.time_steps, 0)
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_svm(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
-																	calc_test_error, verbosity, saved_model, model_file_name)
+																	calc_test_error, verbosity, saved_model, model_file_name, self.returns)
 				print('time elapsed: ', timer() - start)
 
 				if(not saved_model):
@@ -459,7 +482,7 @@ class Predictor():
 				train_y, val_y, test_y = values[1:wall+1,0], values[wall+1:wall+wall_val+1,0], values[wall+wall_val+1:,0]
 				start = timer()
 				rmse, _, y, y_hat, y_valset, y_hat_val, last, dir_acc, model = modelos.model_arima(train_X, val_X, test_X, train_y, val_y, test_y, self.time_steps, self.d, self.q, self.n_features, self.n_lags, self.scaler, last_values, calc_val_error, 
-																calc_test_error, verbosity, saved_model, model_file_name)
+																calc_test_error, verbosity, saved_model, model_file_name, self.returns)
 
 				if(model==None):
 					raise Exception('Parámetros para SARIMAX invalidos, por lo que no se puede calcular')
@@ -499,7 +522,8 @@ class Predictor():
 			new_ob = pd.DataFrame(new_ob)
 			new_ob.columns = self.original_cols
 			new_ob = new_ob[self.selected_features].values
-		
+		assert new_ob.shape[1] == self.data_train.shape[1]
+
 		if(self.data_train[-1, 0] != new_ob[-1, 0]): self.data_train = np.append(self.data_train, new_ob, axis=0)
 		values = self.scaler.transform(self.data_train)
 		
